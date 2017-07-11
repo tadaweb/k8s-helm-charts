@@ -1,0 +1,214 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  labels:
+    application: {{ template "fullname" . }}
+    component: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+  name: {{ template "fullname" . }}
+spec:
+  serviceName: {{ template "fullname" . }}
+  replicas: {{ .Values.replicas }}
+  template:
+    metadata:
+      labels:
+        application: {{ template "fullname" . }}
+        component: {{ template "name" . }}
+        chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+        heritage: {{ .Release.Service }}
+        release: {{ .Release.Name }}
+      annotations:
+        pod.alpha.kubernetes.io/init-containers: '[
+            {
+                "name": "install-scripts",
+                "image": "{{ .Values.installImage.name }}:{{ .Values.installImage.tag }}",
+                "imagePullPolicy": "{{ .Values.installImage.pullPolicy }}",
+                "volumeMounts": [
+                    {
+                        "name": "install-vol",
+                        "mountPath": "/install"
+                    }
+                ]
+            },
+            {
+                "name": "rabbitmq-bootstrap",
+                "image": "{{ .Values.image.name }}:{{ .Values.image.tag }}",
+                "command": ["/install/peer-finder"],
+                "args": ["-on-start=/install/on-start.sh", "-service={{ template "fullname" . }}"],
+                "imagePullPolicy": "{{ .Values.image.pullPolicy }}",
+                "env": [
+                    {
+                        "name": "POD_NAMESPACE",
+                        "valueFrom": {
+                            "fieldRef": {
+                                "apiVersion": "v1",
+                                "fieldPath": "metadata.namespace"
+                            }
+                        }
+                    },
+                    {
+                        "name": "CLUSTER_NAME",
+                        "value": "{{ .Values.clusterName }}"
+                    },
+                    {
+                        "name": "RABBITMQ_USE_LONGNAME",
+                        "value": "true"
+                    },
+                    {
+                        "name": "RABBITMQ_ERLANG_COOKIE",
+                        "value": "{{ .Values.config.erlangCookie }}"
+                    },
+                    {
+                        "name": "RABBITMQ_DEFAULT_VHOST",
+                        "value": "{{ .Values.config.defaultVhost }}"
+                    }
+                    {{- if .Values.config.auth.enabled }},
+                    {
+                        "name": "RABBITMQ_DEFAULT_USER",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "{{ template "fullname" . }}-creds",
+                                "key": "user"
+                            }
+                        }
+                    },
+                    {
+                        "name": "RABBITMQ_DEFAULT_PASS",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "{{ template "fullname" . }}-creds",
+                                "key": "password"
+                            }
+                        }
+                    }
+                    {{- end }},
+                    {
+                        "name": "RABBITMQ_NODENAME",
+                        "value": "{{ .Values.config.nodeName }}"
+                    },
+                    {
+                        "name": "RABBITMQ_NODE_PORT",
+                        "value": "{{ .Values.config.nodePort }}"
+                    },
+                    {
+                        "name": "RABBITMQ_SERVER_START_ARGS",
+                        {{- if .Values.config.ssl.enabled }}
+                        "value": "-rabbitmq_management listener [{port,{{ .Values.config.mgmtPort | sub 1 }}}]"
+                        {{- else }}
+                        "value": "-rabbitmq_management listener [{port,{{ .Values.config.mgmtPort }}}]"
+                        {{- end }}
+                    }
+                ],
+                "volumeMounts": [
+                    {
+                        "name": "install-vol",
+                        "mountPath": "/install"
+                    },
+                    {
+                        "name": "rabbitmq-data",
+                        "mountPath": "/var/lib/rabbitmq"
+                    }
+                ]
+            }
+        ]'
+    spec:
+      volumes:
+        - name: install-vol
+          emptyDir: {}
+      {{- if not .Values.persistentVolume.enabled }}
+        - name: rabbitmq-data
+          emptyDir: {}
+      {{- end }}
+      containers:
+        - name: {{ template "name" . }}
+          image: "{{ .Values.image.name }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          ports:
+            - name: amqp
+              containerPort: {{ .Values.config.nodePort }}
+            - name: epmd
+              containerPort: 4369
+            - name: dist
+              containerPort: {{ .Values.config.nodePort | add 20000 }}
+            - name: mgmt
+              {{- if .Values.config.ssl.enabled }}
+              containerPort: {{ .Values.config.mgmtPort | sub 1 }}
+              {{- else }}
+              containerPort: {{ .Values.config.mgmtPort }}
+              {{- end }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CLUSTER_NAME
+              value: {{ .Values.clusterName | quote }}
+            - name: RABBITMQ_USE_LONGNAME
+              value: "true"
+            - name: RABBITMQ_ERLANG_COOKIE
+              value: {{ .Values.config.erlangCookie }}
+            - name: RABBITMQ_DEFAULT_VHOST
+              value: {{ .Values.config.defaultVhost | quote }}
+            {{- if .Values.config.auth.enabled }}
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "fullname" . }}-creds
+                  key: user
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "fullname" . }}-creds
+                  key: password
+            {{- end }}
+            - name: RABBITMQ_NODENAME
+              value: {{ .Values.config.nodeName | quote }}
+            - name: RABBITMQ_NODE_PORT
+              value: {{ .Values.config.nodePort | quote }}
+            - name: RABBITMQ_SERVER_START_ARGS
+            {{- if .Values.config.ssl.enabled }}
+              value: "-rabbitmq_management listener [{port,{{ .Values.config.mgmtPort | sub 1 | toString }}}]"
+            {{- else }}
+              value: "-rabbitmq_management listener [{port,{{ .Values.config.mgmtPort | toString }}}]"
+            {{- end }}
+          livenessProbe:
+            exec:
+              command:
+                - rabbitmqctl
+                - node_health_check
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - rabbitmqctl
+                - node_health_check
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+          volumeMounts:
+            - name: rabbitmq-data
+              mountPath: /var/lib/rabbitmq
+            - name: install-vol
+              mountPath: /install-bootstrap
+{{- if .Values.persistentVolume.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: rabbitmq-data
+        annotations:
+        {{- range $key, $value := .Values.persistentVolume.annotations }}
+          {{ $key }}: {{ $value }}
+        {{- end }}
+      spec:
+        storageClassName: {{ .Values.persistentVolume.storageClass | quote }}
+        accessModes:
+        {{- range .Values.persistentVolume.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistentVolume.size | quote }}
+{{- end }}

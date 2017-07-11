@@ -1,0 +1,10 @@
+name: rabbitmq
+home: https://www.rabbitmq.com/
+version: 0.1.0
+description:
+icon: http://www.rabbitmq.com/resources/erlang-exchange-talk-final/RabbitMQLogoLarge.png
+sources:
+  - https://github.com/rabbitmq
+maintainers:
+  - name: Giuseppe Pellegrino
+    email: g.pellegrino@tadaweb.com

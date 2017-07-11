@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "fullname" . }}-mgmt
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+  labels:
+    application: {{ template "fullname" . }}
+    component: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  {{- if .Values.publicUi }}
+  type: LoadBalancer
+  {{- else }}
+  type: ClusterIP
+  {{- end }}
+  ports:
+    - name: mgmt
+      protocol: TCP
+      {{- if .Values.config.ssl.enabled }}
+      port: {{ .Values.config.mgmtPort | sub 1 }}
+      targetPort: {{ .Values.config.mgmtPort | sub 1 }}
+      {{- else }}
+      port: {{ .Values.config.mgmtPort }}
+      targetPort: {{ .Values.config.mgmtPort }}
+      {{- end }}
+  selector:
+    application: {{ template "fullname" . }}
+    component: {{ template "name" . }}

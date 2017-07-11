@@ -1,0 +1,53 @@
+clusterName: rabbitmq0
+replicas: 3
+
+publicUi: false
+
+# management port is mgmtPort if no SSL, mgmtPort-1 otherwise
+
+config:
+  nodePort: 5672
+  mgmtPort: 15672
+  nodeName: rabbitmq
+  erlangCookie: 7lOiTR8Zxs2rsTVx
+  defaultVhost: "/"
+  ssl:
+    enabled: false
+  auth:
+    enabled: false
+    # defaulUser:
+    # defaultPass
+
+# Specs for the Docker image for the init container that establishes the cluster
+installImage:
+  name: tadaweb/rabbitmq-install
+  tag: 0.1
+  pullPolicy: Always
+
+# Specs for the MongoDB image
+image:
+  name: rabbitmq
+  tag: 3.6-management
+  pullPolicy: IfNotPresent
+
+# Annotations to be added to MongoDB pods
+podAnnotations: {}
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+# limits:
+#   cpu: 100m
+#   memory: 512Mi
+
+persistentVolume:
+  enabled: true
+  storageClass: default
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+  annotations: {}
+
+# Annotations to be added to the service
+serviceAnnotations: {}

@@ -1,0 +1,44 @@
+# A headless service to create DNS records
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "fullname" . }}
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+  {{- if .Values.serviceAnnotations }}
+{{ toYaml .Values.serviceAnnotations | indent 4 }}
+  {{- end }}
+  labels:
+    application: {{ template "fullname" . }}
+    component: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: amqp
+      protocol: TCP
+      port: {{ .Values.config.nodePort }}
+      targetPort: {{ .Values.config.nodePort }}
+    - name: epmd
+      protocol: TCP
+      port: 4369
+      targetPort: 4369
+    - name: dist
+      protocol: TCP
+      port: {{ .Values.config.nodePort | add 20000 }}
+      targetPort: {{ .Values.config.nodePort | add 20000 }}
+    - name: mgmt
+      protocol: TCP
+      {{- if .Values.config.ssl.enabled }}
+      port: {{ .Values.config.mgmtPort | sub 1 }}
+      targetPort: {{ .Values.config.mgmtPort | sub 1 }}
+      {{- else }}
+      port: {{ .Values.config.mgmtPort }}
+      targetPort: {{ .Values.config.mgmtPort }}
+      {{- end }}
+  selector:
+    application: {{ template "fullname" . }}
+    component: {{ template "name" . }}
