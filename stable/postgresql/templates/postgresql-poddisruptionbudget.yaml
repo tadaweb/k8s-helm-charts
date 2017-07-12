@@ -1,0 +1,15 @@
+{{- if ge (.Values.replicas | int) 2 }}
+{{- $module := mod (.Values.replicas | int) 2 }}
+{{- $quotient := (div (.Values.replicas | int) 2) | int }}
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ template "fullname" . }}-pdb
+spec:
+  minAvailable: {{ if eq (.Values.replicas | int) 2 }}1{{ else }}{{ if eq $module 1 }}{{ $quotient | add1 }}{{ else }}{{ $quotient }}{{ end }}{{ end }}
+  selector:
+    matchLabels:
+      application: {{ template "fullname" . }}
+      component: {{ template "name" . }}
+      supervisor: patroni
+{{- end }}

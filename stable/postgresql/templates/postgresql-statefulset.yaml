@@ -1,0 +1,132 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    application: {{ template "fullname" . }}
+    component: {{ template "name" . }}
+    supervisor: patroni
+spec:
+  serviceName: {{ template "fullname" . }}
+  replicas: {{ default 3 .Values.replicas }}
+  template:
+    metadata:
+      name: {{ template "fullname" . }}
+      labels:
+        heritage: {{ .Release.Service | quote }}
+        release: {{ .Release.Name | quote }}
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        application: {{ template "fullname" . }}
+        component: {{ template "name" . }}
+        supervisor: patroni
+    spec:
+      volumes:
+      {{- if not .Values.persistentVolume.enabled }}
+        - name: pg-data
+          emptyDir: {}
+      {{- end }}
+        - name: patroni-config
+          secret:
+            secretName: {{ template "fullname" . }}-creds
+      containers:
+        {{- if .Values.metrics.enabled }}
+        - name: metrics
+          image: "{{ .Values.metrics.image.name }}:{{ .Values.metrics.image.tag }}"
+          imagePullPolicy: {{ .Values.metrics.image.pullPolicy | quote }}
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: PGPASSWORD_SUPERUSER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "fullname" . }}-creds
+                  key: password-superuser
+            - name: DATA_SOURCE_NAME
+              value: "postgresql://postgres:$PGPASSWORD_SUPERUSER@localhost:5432/?sslmode=disable"
+          ports:
+            - name: pgsql-metrics
+              containerPort: {{ .Values.metrics.port }}
+        {{- end }}
+        - name: spilo
+          image: "{{ .Values.image.name }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          env:
+            - name: PGPASSWORD_SUPERUSER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "fullname" . }}-creds
+                  key: password-superuser
+            - name: PGPASSWORD_ADMIN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "fullname" . }}-creds
+                  key: password-admin
+            - name: PGPASSWORD_STANDBY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "fullname" . }}-creds
+                  key: password-standby
+            {{- if .Values.etcd.host }}
+            - name: ETCD_HOST
+              value: {{ .Values.etcd.host | quote }}
+              {{- if .Values.etcd.url }}
+            - name: PATRONI_ETCD_URL
+              value: {{ .Values.etcd.url }}
+              {{- end }}
+            {{- else }}
+            - name: ETCD_DISCOVERY_DOMAIN
+              value: {{ default (printf "%s-etcd" .Release.Name | trunc 63) .Values.etcd.discovery }}
+            {{- end }}
+            - name: SCOPE
+              value: {{ template "fullname" . }}-conn
+            - name: USE_WALE
+              value: ""
+            - name: PGROOT
+              value: /home/postgres/pgdata/pgroot
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+          ports:
+            - containerPort: 8008
+            - containerPort: 5432
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          volumeMounts:
+            - name: pg-data
+              mountPath: /home/postgres/pgdata
+            - mountPath: /etc/patroni
+              name: patroni-config
+              readOnly: true
+{{- if .Values.persistentVolume.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: pg-data
+        annotations:
+        {{- range $key, $value := .Values.persistentVolume.annotations }}
+          {{ $key }}: {{ $value }}
+        {{- end }}
+        labels:
+          heritage: {{ .Release.Service | quote }}
+          release: {{ .Release.Name | quote }}
+          chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+          application: {{ template "fullname" . }}
+          component: {{ template "name" . }}
+          supervisor: patroni
+      spec:
+        accessModes:
+        {{- range $key, $value := .Values.persistentVolume.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        storageClassName: "{{ .Values.persistentVolume.storageClass }}"
+        resources:
+          requests:
+            storage: "{{ .Values.persistentVolume.size }}"
+{{- end }}

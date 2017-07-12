@@ -1,0 +1,92 @@
+# How many postgres containers to spawn
+replicas: 3
+
+image:
+  name: registry.opensource.zalan.do/acid/spilo-9.6
+  tag: 1.2-p17
+  pullPolicy: IfNotPresent
+
+# Resource limits per replica
+resources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+# limits:
+#   cpu: 100m
+#   memory: 512Mi
+
+service:
+  loadBalancer: false
+
+persistentVolume:
+  enabled: true
+  storageClass: default
+  size: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  annotations: {}
+
+# Credentials used by Patroni
+# * more information: https://github.com/zalando/patroni/blob/master/docs/SETTINGS.rst#postgresql
+credentials:
+  # superuser password is the user used by Patroni to connect to the db
+  superuser: tea
+  # the admin user password
+  admin: cola
+  # replication user password
+  standby: pinacolada
+
+# Patroni depends on etcd, configure it here
+etcd:
+  install: true
+  host: # fill-in value for etcd host (etcd.default.svc.cluster.local), leave blank to use the discovery parameter
+  url: # fill this with the url of the etcd host http(s)://username:pass@host:port.  ONLY NEEDED WITH HTTPS
+  discovery: # leave blank to use vendored etcd chart
+
+pgadmin:
+  enabled: false
+  service:
+    loadBalancer: false
+
+  credentials:
+    user: pgadmin4@pgadmin.org
+    password: admin
+
+  port: 5050
+  image:
+    name: fenglc/pgadmin4
+    tag: 1.5
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  # limits:
+  #   cpu: 100m
+  #   memory: 512Mi
+
+phppgadmin:
+  enabled: false
+
+  # if the phppgadmin must connect to the master only
+  masterOnly: true
+  service:
+    loadBalancer: false
+  port: 8060
+  image:
+    name: tadaweb/phppgadmin
+    tag: 5.0.4
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+metrics:
+  enabled: false
+  port: 9187
+
+  image:
+    name: wrouesnel/postgres_exporter
+    tag: v0.2.1
+    pullPolicy: IfNotPresent

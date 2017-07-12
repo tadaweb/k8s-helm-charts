@@ -1,0 +1,50 @@
+{{- if .Values.phppgadmin.enabled }}
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}-phppgadmin
+  labels:
+    application: {{ template "fullname" . }}
+    component: phppgadmin
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      application: {{ template "fullname" . }}
+      component: phppgadmin
+  template:
+    metadata:
+      name: {{ template "fullname" . }}-phppgadmin
+      labels:
+        application: {{ template "fullname" . }}
+        component: phppgadmin
+        chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+        heritage: {{ .Release.Service }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: phppgadmin
+          image: {{ .Values.phppgadmin.image.name }}:{{ .Values.phppgadmin.image.tag }}
+          imagePullPolicy: {{ .Values.phppgadmin.image.pullPolicy }}
+          resources:
+{{ toYaml .Values.phppgadmin.resources | indent 12 }}
+          ports:
+            - name: phppgadmin
+              containerPort: {{ .Values.phppgadmin.port }}
+          env:
+            - name: POD_NAMESPACE
+              value: {{ .Release.Namespace | quote }}
+            - name: POD_SERVICE
+              value: {{ template "fullname" . }}
+            - name: PHPPGADMIN_PORT
+              value: "{{ .Values.phppgadmin.port }}"
+            - name: POSTGRESQL_HOSTS
+              {{- if .Values.phppgadmin.masterOnly }}
+              value: {{ template "fullname" . }}-conn.{{ template "fullname" . }}.{{ $.Release.Namespace }}.svc.cluster.local:5432
+              {{- else }}
+              {{- $fullname := printf "%s-%s" .Release.Name (default .Chart.Name .Values.nameOverride) | trunc 63 | trimSuffix "-" }}
+              value: "{{ range $el := (until (.Values.replicas | int)) }}{{ $fullname }}-{{ $el }}.{{ $fullname }}.{{ $.Release.Namespace }}.svc.cluster.local:5432{{ if ne ($el | int) (sub ($.Values.replicas | int) 1) }},{{ end }}{{ end }}"
+              {{- end }}
+{{- end }}

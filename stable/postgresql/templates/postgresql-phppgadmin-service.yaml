@@ -1,0 +1,27 @@
+{{- if .Values.phppgadmin.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "fullname" . }}-phppgadmin
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    application: {{ template "fullname" . }}
+    component: phppgadmin
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  {{- if .Values.phppgadmin.service.loadBalancer }}
+  type: LoadBalancer
+  {{- else }}
+  type: ClusterIP
+  {{- end }}
+  selector:
+    application: {{ template "fullname" . }}
+    component: phppgadmin
+  ports:
+    - name: phppgadmin
+      port: {{ .Values.phppgadmin.port }}
+      targetPort: {{ .Values.phppgadmin.port }}
+{{- end }}

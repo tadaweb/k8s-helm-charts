@@ -1,0 +1,55 @@
+{{- if .Values.pgadmin.enabled }}
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}-pgadmin
+  labels:
+    application: {{ template "fullname" . }}
+    component: pgadmin
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      application: {{ template "fullname" . }}
+      component: pgadmin
+  template:
+    metadata:
+      name: {{ template "fullname" . }}-pgadmin
+      labels:
+        application: {{ template "fullname" . }}
+        component: pgadmin
+        chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+        heritage: {{ .Release.Service }}
+        release: {{ .Release.Name }}
+    spec:
+      volumes:
+        - name: pgadmin-creds
+          secret:
+            secretName: {{ template "fullname" . }}-pgadmin-creds
+      containers:
+        - name: pgadmin
+          image: {{ .Values.pgadmin.image.name }}:{{ .Values.pgadmin.image.tag }}
+          imagePullPolicy: {{ .Values.pgadmin.image.pullPolicy }}
+          resources:
+{{ toYaml .Values.pgadmin.resources | indent 12 }}
+          ports:
+            - name: pgadmin
+              containerPort: {{ .Values.pgadmin.port }}
+          env:
+            - name: POD_NAMESPACE
+              value: {{ .Release.Namespace | quote }}
+            - name: POD_SERVICE
+              value: {{ template "fullname" . }}
+            - name: DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "fullname" . }}-pgadmin-creds
+                  key: user
+            - name: DEFAULT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "fullname" . }}-pgadmin-creds
+                  key: password
+{{- end }}
