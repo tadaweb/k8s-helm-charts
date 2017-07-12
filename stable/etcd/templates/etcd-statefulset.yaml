@@ -1,0 +1,131 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: "{{ template "fullname" . }}"
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    application: {{ template "fullname" . }}
+    component: {{ template "name" . }}
+spec:
+  serviceName: "{{ template "fullname" . }}"
+  replicas: {{ default 3 .Values.replicas }}
+  template:
+    metadata:
+      name: "{{ template "fullname" . }}"
+      labels:
+        heritage: {{ .Release.Service | quote }}
+        release: {{ .Release.Name | quote }}
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        application: {{ template "fullname" . }}
+        component: {{ template "name" . }}
+      annotations:
+        pod.alpha.kubernetes.io/initialized: "true"
+    spec:
+      {{- if not .Values.persistentVolume.enabled }}
+      volumes:
+        - name: etcd-data
+          emptyDir: {}
+      {{- end }}
+      containers:
+        - name: "{{ template "fullname" . }}"
+          image: "{{ .Values.image.name }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          ports:
+            - containerPort: {{ .Values.ports.peer }}
+              name: peer
+            - containerPort: {{ .Values.ports.client }}
+              name: client
+          env:
+            - name: INITIAL_CLUSTER_SIZE
+              value: {{ default 3 .Values.replicas | quote }}
+            - name: POD_NAMESPACE
+              value: {{ .Release.Namespace | quote }}
+            - name: REPLICA_NAME
+              value: "{{ template "fullname" . }}"
+            - name: ETCD_CLUSTER_NAME
+              value: {{ .Values.clusterName | quote }}
+  {{- if .Values.security.tls.client.enabled }}
+            - name: ETCD_CLIENT_TLS
+              value: auto
+  {{- end }}
+  {{- if .Values.security.tls.peer.enabled }}
+            - name: ETCD_PEER_TLS
+              value: auto
+  {{- end }}
+          volumeMounts:
+            - name: etcd-data
+              mountPath: /var/etcd
+          command:
+            - "/bin/sh"
+            - "-ec"
+            - |
+              HOSTNAME=$(hostname)
+
+              # store member id into PV
+              collect_member() {
+                  while ! etcdctl member list &>/dev/null; do sleep 1; done
+                  etcdctl member list | grep http://${HOSTNAME}.${REPLICA_NAME}.${POD_NAMESPACE}.svc:2380 | cut -d':' -f1 | cut -d'[' -f1 > /var/etcd/member_id
+                  exit 0
+              }
+
+              for i in $(seq 0 $((${INITIAL_CLUSTER_SIZE} - 1))); do
+                  while true; do
+                      echo "Waiting for ${REPLICA_NAME}-${i}.${REPLICA_NAME}.${POD_NAMESPACE}.svc to come up"
+                      ping -W 1 -c 1 ${REPLICA_NAME}-${i}.${REPLICA_NAME}.${POD_NAMESPACE}.svc > /dev/null && break
+                      sleep 1s
+                  done
+              done
+
+              TLS_CLIENT_OPTS=""
+              CLIENT_PROTOCOL="http"
+              if [ ! -z ${ETCD_CLIENT_TLS} ]; then
+                  TLS_CLIENT_OPTS="--auto-tls"
+                  CLIENT_PROTOCOL="https"
+              fi
+
+              TLS_PEER_OPTS=""
+              PEER_PROTOCOL="http"
+              if [ ! -z ${ETCD_PEER_TLS} ]; then
+                TLS_PEER_OPTS="--peer-auto-tls"
+                PEER_PROTOCOL="https"
+              fi
+
+              PEERS=""
+              for i in $(seq 0 $((${INITIAL_CLUSTER_SIZE} - 1))); do
+              PEERS="${PEERS}${PEERS:+,}${REPLICA_NAME}-${i}=${PEER_PROTOCOL}://${REPLICA_NAME}-${i}.${REPLICA_NAME}.${POD_NAMESPACE}.svc:2380"
+              done
+
+              collect_member &
+
+              # join member
+              exec etcd --name ${HOSTNAME} \
+                  --initial-advertise-peer-urls ${PEER_PROTOCOL}://${HOSTNAME}.${REPLICA_NAME}.${POD_NAMESPACE}.svc:2380 \
+                  --listen-peer-urls ${PEER_PROTOCOL}://0.0.0.0:2380 \
+                  --listen-client-urls ${CLIENT_PROTOCOL}://0.0.0.0:2379 \
+                  --advertise-client-urls ${CLIENT_PROTOCOL}://${HOSTNAME}.${REPLICA_NAME}.${POD_NAMESPACE}.svc:2379 \
+                  --initial-cluster-token ${ETCD_CLUSTER_NAME} \
+                  --initial-cluster ${PEERS} \
+                  --initial-cluster-state new \
+                  --data-dir /var/etcd/default.etcd ${TLS_PEER_OPTS} ${TLS_CLIENT_OPTS}
+{{- if .Values.persistentVolume.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: etcd-data
+        annotations:
+        {{- range $key, $value := .Values.persistentVolume.annotations }}
+          {{ $key }}: {{ $value }}
+        {{- end }}
+      spec:
+        storageClassName: "{{ .Values.persistentVolume.className }}"
+        accessModes:
+        {{- range $key, $value := .Values.persistentVolume.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: "{{ .Values.persistentVolume.size }}"
+{{- end }}

@@ -1,0 +1,41 @@
+# Default values for etcd.
+# This is a YAML-formatted file.
+# Declare name/value pairs to be passed into your templates.
+# name: value
+clusterName: etcd-cluster-0
+replicas: 3
+
+service:
+  loadBalancer: false
+
+ports:
+  peer: 2380
+  client: 2379
+
+image:
+  name: "quay.io/coreos/etcd"
+  tag: "v3.2.1"
+  pullPolicy: "IfNotPresent"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+# limits:
+#   cpu: 100m
+#   memory: 512Mi
+
+persistentVolume:
+  enabled: true
+  storageClass: default
+  accessModes:
+    - ReadWriteOnce
+  size: "1Gi"
+
+# at the moment it supports only auto-tls certificates
+security:
+  tls:
+    client:
+      enabled: true
+    peer:
+      enabled: true

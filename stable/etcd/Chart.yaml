@@ -1,0 +1,11 @@
+description: etcd is an open-source distributed key value store that provides shared configuration and service discovery for Container Linux clusters.
+  etcd runs on each machine in a cluster and gracefully handles leader election during network partitions and the loss of the current leader.
+home: https://github.com/coreos/etcd
+icon: https://raw.githubusercontent.com/coreos/etcd/master/logos/etcd-horizontal-color.png
+maintainers:
+- email: g.pellegrino@tadaweb.com   
+  name: Giuseppe Pellegrino
+name: etcd
+sources:
+- https://github.com/coreos/etcd
+version: 0.1.0

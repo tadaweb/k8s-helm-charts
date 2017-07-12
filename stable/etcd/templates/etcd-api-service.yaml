@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ template "fullname" . }}-svc"
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    application: {{ template "fullname" . }}
+    component: {{ template "name" . }}
+spec:
+  {{- if .Values.service.loadBalancer }}
+  type: LoadBalancer
+  {{- else }}
+  type: ClusterIp
+  {{- end }}
+  ports:
+  - port: {{ .Values.ports.client }}
+    name: etcd-client
+    targetPort: {{ .Values.ports.client }}
+  selector:
+    application: {{ template "fullname" . }}
+    component: {{ template "name" . }}
