@@ -1,10 +1,10 @@
 clusterName: rabbitmq0
 replicas: 3
 
-publicUi: false
+service:
+  loadBalancer: false
 
 # management port is mgmtPort if no SSL, mgmtPort-1 otherwise
-
 config:
   nodePort: 5672
   mgmtPort: 15672
@@ -15,8 +15,8 @@ config:
     enabled: false
   auth:
     enabled: false
-    # defaulUser:
-    # defaultPass
+    defaulUser: guest
+    defaultPass: guest
 
 # Specs for the Docker image for the init container that establishes the cluster
 installImage:
@@ -25,9 +25,14 @@ installImage:
   pullPolicy: Always
 
 # Specs for the MongoDB image
+# use the following if you want to have the exporter enabled in rabbitmq
+# directly
+# image:
+#   name: deadtrickster/rabbitmq_prometheus
+#   tag: 3.6.10
 image:
   name: rabbitmq
-  tag: 3.6-management
+  tag: 3.6.10-management
   pullPolicy: IfNotPresent
 
 # Annotations to be added to MongoDB pods
@@ -51,3 +56,24 @@ persistentVolume:
 
 # Annotations to be added to the service
 serviceAnnotations: {}
+
+metrics:
+  enabled: false
+  port: 9090
+  # use a different user and password than the default.
+  # the user must exist
+  # rabbitmqUser:
+  # rabbitmqPassword:
+
+  image:
+    name: kbudde/rabbitmq-exporter
+    tag: v0.20.0
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+  # Regexp matching queues names respectively are not exported and are exported
+  # skipQueues: ".*"
+  # includeQueues: "^$"

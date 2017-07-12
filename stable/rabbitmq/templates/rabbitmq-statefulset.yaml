@@ -122,6 +122,59 @@ spec:
           emptyDir: {}
       {{- end }}
       containers:
+        {{- if .Values.metrics.enabled }}
+        - name: metrics
+          image: "{{ .Values.metrics.image.name }}:{{ .Values.metrics.image.tag }}"
+          imagePullPolicy: "{{ .Values.metrics.image.pullPolicy }}"
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.metrics.port }}
+          resources:
+{{ toYaml .Values.metrics.resources | indent 12 }}
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: RABBIT_USER
+            {{- if .Values.metrics.rabbitmqUser }}
+              value: {{ .Values.metrics.user | quote }}
+            {{- else if .Values.config.auth.enabled }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "fullname" . }}-creds
+                  key: user
+            {{- else }}
+              value: guest
+            {{- end }}
+            - name: RABBIT_PASSWORD
+            {{- if .Values.metrics.rabbitmqPassword }}
+              value: {{ .Values.metrics.password | quote }}
+            {{- else if .Values.config.auth.enabled }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "fullname" . }}-creds
+                  key: password
+            {{- else }}
+              value: guest
+            {{- end }}
+            - name: RABBIT_URL
+            {{- if .Values.config.ssl.enabled }}
+              value: "https://localhost:{{ .Values.config.mgmtPort | sub 1 }}"
+            {{- else }}
+              value: "http://localhost:{{ .Values.config.mgmtPort }}"
+            {{- end }}
+            {{- if .Values.metrics.includeQueues }}
+            - name: INCLUDE_QUEUES
+              value: {{ .Values.metrics.includeQueues | quote }}
+            {{- end }}
+            {{- if .Values.metrics.skipQueues }}
+            - name: SKIP_QUEUES
+              value: {{ .Values.metrics.skipQueues | quote }}
+            {{- end }}
+            - name: PUBLISH_PORT
+              value: "{{ .Values.metrics.port }}"
+        {{- end }}
         - name: {{ template "name" . }}
           image: "{{ .Values.image.name }}:{{ .Values.image.tag }}"
           imagePullPolicy: "{{ .Values.image.pullPolicy }}"

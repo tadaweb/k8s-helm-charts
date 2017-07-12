@@ -39,6 +39,11 @@ spec:
       port: {{ .Values.config.mgmtPort }}
       targetPort: {{ .Values.config.mgmtPort }}
       {{- end }}
+    {{- if .Values.metrics.enabled }}
+    - name: metrics
+      port: {{ .Values.metrics.port }}
+      targetPort: {{ .Values.metrics.port }}
+    {{- end }}
   selector:
     application: {{ template "fullname" . }}
     component: {{ template "name" . }}
