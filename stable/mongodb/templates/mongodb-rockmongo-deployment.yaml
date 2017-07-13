@@ -1,0 +1,62 @@
+{{- if .Values.rockmongo.enabled }}
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}-rockmongo
+  labels:
+    application: {{ template "fullname" . }}
+    component: rockmongo
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      application: {{ template "fullname" . }}
+      component: rockmongo
+  template:
+    metadata:
+      name: {{ template "fullname" . }}-rockmongo
+      labels:
+        application: {{ template "fullname" . }}
+        component: rockmongo
+        chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+        heritage: {{ .Release.Service }}
+        release: {{ .Release.Name }}
+    spec:
+      volumes:
+        - name: rockmongo-conf
+          configMap:
+            name: {{ template "fullname" . }}-rockmongo
+      containers:
+        - name: rockmongo
+          image: {{ .Values.rockmongo.image.name }}:{{ .Values.rockmongo.image.tag }}
+          imagePullPolicy: {{ .Values.rockmongo.image.pullPolicy }}
+          ports:
+            - name: server
+              containerPort: {{ .Values.rockmongo.port }}
+          resources:
+{{ toYaml .Values.rockmongo.resources | indent 12 }}
+          env:
+            - name: POD_NAMESPACE
+              value: {{ .Release.Namespace | quote }}
+            - name: POD_SERVICE
+              value: {{ template "fullname" . }}
+            - name: MONGO_AUTH
+            {{- if .Values.auth.enabled }}
+              value: "true"
+            {{- else }}
+              value: "false"
+            {{- end }}
+            - name: ROCKMONGO_PORT
+              value: "{{ .Values.rockmongo.port }}"
+            - name: MONGO_HOSTS
+              {{- $fullname := printf "%s-%s" .Release.Name (default .Chart.Name .Values.nameOverride) | trunc 63 | trimSuffix "-" }}
+              value: "{{ range $el := (until (.Values.replicas | int)) }}{{ $fullname }}-{{ $el }}.{{ $fullname }}.{{ $.Release.Namespace }}.svc.cluster.local:{{ $.Values.port }}{{ if ne ($el | int) (sub ($.Values.replicas | int) 1) }},{{ end }}{{ end }}"
+            - name: MONGO_HIDE_SYSTEM_COLLECTIONS
+              value: "{{ .Values.rockmongo.hideSystemCollections }}"
+          volumeMounts:
+            - name: rockmongo-conf
+              mountPath: /var/www/localhost/rockmongo/config.php
+              subPath: config.php
+{{- end }}

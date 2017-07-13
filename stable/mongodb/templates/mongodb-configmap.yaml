@@ -9,5 +9,15 @@ metadata:
     release: {{ .Release.Name }}
   name: {{ template "fullname" . }}
 data:
-  mongod.conf: |
-{{ toYaml .Values.configmap | indent 4 }}
+  mongod.conf: |-
+    storage:
+      dbPath: /data/db
+    net:
+      port: {{ .Values.port }}
+    replication:
+      replSetName: {{ .Values.replicaSet }}
+    {{- if .Values.auth.enabled }}
+    security:
+      authorization: enabled
+      keyFile: /keydir/key.txt
+    {{- end }}

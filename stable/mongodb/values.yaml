@@ -44,14 +44,41 @@ persistentVolume:
 # Annotations to be added to the service
 serviceAnnotations: {}
 
-# Entries for the MongoDB config file
-configmap:
-  storage:
-    dbPath: /data/db
-  net:
-    port: 27017
-  replication:
-    replSetName: rs0
-# security:
-#   authorization: enabled
-#   keyFile: /keydir/key.txt
+rockmongo:
+  enabled: false
+  port: 8085
+  image:
+    name: tadaweb/rockmongo
+    tag: 1.1.7
+    pullPolicy: Always
+  hideSystemCollections: false
+  service:
+    loadBalancer: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+  controlUsers:
+    enabled: false
+    # This option is deprecated!
+    # if controlUsers enabled use the list to define them
+    # list:
+    #   - name:
+    #     password:
+
+metrics:
+  enabled: false
+  port: 9216
+
+  image:
+    # to be replaced with the exporter by Percona
+    # this supports the authentication but must be passed as a cli argument.
+    # The cli cannot be used with env variables because the container does not have a shell.
+    name: crobox/mongodb-exporter
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi

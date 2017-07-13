@@ -20,6 +20,10 @@ spec:
   ports:
     - name: peer
       port: {{ .Values.port }}
+    {{- if .Values.metrics.enabled }}
+    - name: metrics
+      port: {{ .Values.metrics.port }}
+    {{- end }}
   selector:
     application: {{ template "fullname" . }}
     component: {{ template "name" . }}

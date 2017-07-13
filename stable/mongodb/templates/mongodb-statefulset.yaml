@@ -123,6 +123,26 @@ spec:
           emptyDir: {}
       {{- end}}
       containers:
+        {{- if .Values.metrics.enabled }}
+        - name: metrics
+          image: "{{ .Values.metrics.image.name }}:{{ .Values.metrics.image.tag }}"
+          imagePullPolicy: "{{ .Values.metrics.image.pullPolicy }}"
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.metrics.port }}
+          resources:
+{{ toYaml .Values.metrics.resources | indent 12 }}
+          env:
+            - name: MONGODB_URL
+              value: "mongodb://localhost:{{ .Values.port }}"
+          args:
+            - "-web.listen-address"
+            - ":{{ .Values.metrics.port }}"
+            - "-mongodb.collect.oplog"
+            - "-mongodb.collect.replset"
+            # - "-mongodb.collect.database"
+            # - "-mongodb.collect.collection"
+        {{- end }}
         - name: {{ template "name" . }}
           image: "{{ .Values.image.name }}:{{ .Values.image.tag }}"
           imagePullPolicy: "{{ .Values.image.pullPolicy }}"
