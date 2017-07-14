@@ -50,7 +50,7 @@ rockmongo:
   image:
     name: tadaweb/rockmongo
     tag: 1.1.7
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
   hideSystemCollections: false
   service:
     loadBalancer: false
@@ -58,7 +58,6 @@ rockmongo:
     requests:
       cpu: 50m
       memory: 128Mi
-
   controlUsers:
     enabled: false
     # This option is deprecated!
@@ -66,6 +65,28 @@ rockmongo:
     # list:
     #   - name:
     #     password:
+
+mongoexpress:
+  enabled: false
+  port: 8081
+  image:
+    name: mongo-express
+    tag: 0.40.0
+    pullPolicy: IfNotPresent
+  service:
+    loadBalancer: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  gridfsEnabled: true
+  requestSize: 1mb
+  editorTheme: lesser-dark
+  # Used only when mongodb.auth is disabled
+  controlUser:
+    name: admin
+    password: admin
+
 
 metrics:
   enabled: false

@@ -1,0 +1,60 @@
+{{- if .Values.mongoexpress.enabled }}
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}-mongoexpress
+  labels:
+    application: {{ template "fullname" . }}
+    component: mongoexpress
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      application: {{ template "fullname" . }}
+      component: mongoexpress
+  template:
+    metadata:
+      name: {{ template "fullname" . }}-mongoexpress
+      labels:
+        application: {{ template "fullname" . }}
+        component: mongoexpress
+        chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+        heritage: {{ .Release.Service }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: mongoexpress
+          image: {{ .Values.mongoexpress.image.name }}:{{ .Values.mongoexpress.image.tag }}
+          imagePullPolicy: {{ .Values.mongoexpress.image.pullPolicy }}
+          ports:
+            - name: server
+              containerPort: {{ .Values.mongoexpress.port }}
+          resources:
+{{ toYaml .Values.mongoexpress.resources | indent 12 }}
+          env:
+            - name: POD_NAMESPACE
+              value: {{ .Release.Namespace | quote }}
+            - name: POD_SERVICE
+              value: {{ template "fullname" . }}
+            {{- if not .Values.auth.enabled }}
+            - name: ME_CONFIG_BASICAUTH_USERNAME
+              value: {{ .Values.mongoexpress.controlUser.name | quote }}
+            - name: ME_CONFIG_BASICAUTH_PASSWORD
+              value: {{ .Values.mongoexpress.controlUser.password | quote }}
+            {{- end }}
+            - name: ME_CONFIG_SITE_COOKIESECRET
+              value: {{ randAlphaNum 16 | quote }}
+            - name: ME_CONFIG_SITE_SESSIONSECRET
+              value: {{ randAlphaNum 16 | quote }}
+            - name: ME_CONFIG_REQUEST_SIZE
+              value: {{ .Values.mongoexpress.requestSize | quote }}
+            - name: ME_CONFIG_OPTIONS_EDITORTHEME
+              value: {{ .Values.mongoexpress.editorTheme | quote }}
+            - name: ME_CONFIG_MONGODB_SERVER
+              {{- $fullname := printf "%s-%s" .Release.Name (default .Chart.Name .Values.nameOverride) | trunc 63 | trimSuffix "-" }}
+              value: "{{ range $el := (until (.Values.replicas | int)) }}{{ $fullname }}-{{ $el }}.{{ $fullname }}.{{ $.Release.Namespace }}.svc.cluster.local{{ if ne ($el | int) (sub ($.Values.replicas | int) 1) }},{{ end }}{{ end }}"
+            - name: ME_CONFIG_MONGODB_PORT
+              value: "{{ .Values.mongoexpress.port }}"
+{{- end }}

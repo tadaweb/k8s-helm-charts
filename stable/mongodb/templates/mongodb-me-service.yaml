@@ -1,0 +1,27 @@
+{{- if .Values.mongoexpress.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "fullname" . }}-mongoexpress
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+  labels:
+    application: {{ template "fullname" . }}
+    component: mongoexpress
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  {{- if .Values.mongoexpress.service.loadBalancer }}
+  type: LoadBalancer
+  {{- else }}
+  type: ClusterIP
+  {{- end }}
+  ports:
+    - name: mongoexpress
+      port: {{ .Values.mongoexpress.port }}
+      targetPort: {{ .Values.mongoexpress.port }}
+  selector:
+    application: {{ template "fullname" . }}
+    component: mongoexpress
+{{- end }}
