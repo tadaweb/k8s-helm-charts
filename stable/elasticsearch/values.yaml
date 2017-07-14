@@ -1,0 +1,82 @@
+clusterName: elasticsearch
+
+disableXPack: true
+
+# Add a comma separated list of plugins.
+#
+# bootstrapInstPlugins:
+# bootstrapRmPlugins:
+
+transportPort: 9300
+restPort: 9200
+
+# This helm chart is based on the official images of ES
+# the official images are reachable at
+# version >= 5.0.0 get the image from https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html
+# version < 5.0.0 get the image from https://hub.docker.com/_/elasticsearch/
+# Please be careful. This chart checks the version to execute different commands.
+image:
+  name: docker.elastic.co/elasticsearch/elasticsearch
+  tag: 5.2.2
+  pullPolicy: IfNotPresent
+
+persistentVolume:
+  enabled: true
+  storageClass: default
+  accessModes:
+    - ReadWriteOnce
+  size: 30Gi
+  annotations: {}
+
+master:
+  replicas: 3
+  minMasterNodes: 2
+  minHeapSize: "256m"
+  maxHeapSize: "256m"
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    # limits:
+    #   cpu: "100m"
+    #   memory: "256Mi"
+
+data:
+  replicas: 3
+  minHeapSize: "256m"
+  maxHeapSize: "256m"
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "2Gi"
+    # limits:
+    #   cpu: "100m"
+    #   memory: "256Mi"
+
+client:
+  replicas: 2
+  service:
+    loadBalancer: false
+  minHeapSize: "256m"
+  maxHeapSize: "256m"
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "256Mi"
+    # limits:
+    #   cpu: "100m"
+    #   memory: "256Mi"
+
+metrics:
+  enabled: false
+  port: 9114
+  image:
+    name: justwatch/elasticsearch_exporter
+    tag: 1.0.0
+    imagePullPolicy: IfNotPresent
+  queryAll: true
+  timeout: 20s
+  resources:
+    requests:
+      cpu: "50m"
+      memory: 128Mi
