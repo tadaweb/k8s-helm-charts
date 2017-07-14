@@ -1,0 +1,43 @@
+{{- if .Values.curator.enabled }}
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}-curator
+  labels:
+    application: {{ template "fullname" . }}
+    component: curator
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: {{ template "fullname" . }}
+      component: curator
+  template:
+    metadata:
+      name: {{ template "fullname" . }}-curator
+      labels:
+        application: {{ template "fullname" . }}
+        component: curator
+        chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+        heritage: {{ .Release.Service }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: curator
+          image: {{ .Values.curator.image.name }}:{{ .Values.curator.image.tag }}
+          imagePullPolicy: {{ .Values.curator.image.pullPolicy }}
+          resources:
+{{ toYaml .Values.curator.resources | indent 12 }}
+          env:
+            - name: POD_NAMESPACE
+              value: {{ .Release.Namespace | quote }}
+            - name: POD_SERVICE
+              value: {{ template "fullname" . }}
+            - name: SCHEDULE
+              value: {{ .Values.curator.schedule | quote }}
+            - name: COMMAND
+              value: curator --master-only --host '{{ template "fullname" . }}-elasticsearch-api.{{ .Release.Namespace }}.svc.cluster.local delete indices' --prefix logstash --timestring '%Y.%m.%d' --time-unit days --older-than {{ .Values.curator.indicesDeleteDays }} ; curator --master-only --host '{{ template "fullname" . }}-elasticsearch-api.{{ .Release.Namespace }}.svc.cluster.local' close indices --prefix  logstash --timestring '%Y.%m.%d' --time-unit days --older-than {{ .Values.curator.indicesCloseDays }}
+{{- end }}

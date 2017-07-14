@@ -1,0 +1,13 @@
+name: elk
+description: By combining the massively popular Elasticsearch, Logstash, and Kibana (what was the ELK Stack is now the Elastic Stack),
+    Elastic has created an end-to-end stack that delivers actionable insights in real time from almost any type of structured and unstructured data source
+version: 0.1.0
+home: https://www.elastic.co/webinars/introduction-elk-stack
+icon: https://static-www.elastic.co/assets/blt6050efb80ceabd47/elastic-logo%20(2).svg?q=900
+sources:
+  - https://github.com/elastic/elasticsearch
+  - https://github.com/elastic/logstash
+  - https://github.com/elastic/kibana
+maintainers:
+  - name: Giuseppe Pellegrino
+    email: g.pellegrino@tadaweb.com

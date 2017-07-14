@@ -1,0 +1,76 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}-logstash
+  labels:
+    application: {{ template "fullname" . }}
+    component: logstash
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.logstash.replicas }}
+  selector:
+    matchLabels:
+      application: {{ template "fullname" . }}
+      component: logstash
+  template:
+    metadata:
+      name: {{ template "fullname" . }}-logstash
+      labels:
+        application: {{ template "fullname" . }}
+        component: logstash
+        chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+        heritage: {{ .Release.Service }}
+        release: {{ .Release.Name }}
+    spec:
+      volumes:
+        - name: logstash-config
+          configMap:
+            name: {{ template "fullname" . }}-logstash-config
+        - name: logstash-kibana-config
+          configMap:
+            name: {{ template "fullname" . }}-logstash-kibana-config
+        - name: logstash-certs
+          secret:
+            secretName: {{ template "fullname" . }}-logstash-certs
+      containers:
+        - name: logstash
+          image: {{ .Values.logstash.image.name }}:{{ .Values.logstash.image.tag }}
+          imagePullPolicy: {{ .Values.logstash.image.pullPolicy }}
+          resources:
+{{ toYaml .Values.logstash.resources | indent 12 }}
+          volumeMounts:
+            - name: logstash-certs
+              readOnly: true
+              mountPath: /etc/ssl/logstash
+            - name: logstash-config
+              mountPath: /etc/logstash/conf.d
+            - name: logstash-kibana-config
+              mountPath: /kibana/search
+          ports:
+            {{- if .Values.logstash.lumberjack.enabled }}
+            - name: lumberjack-port
+              containerPort: {{ .Values.logstash.lumberjack.port }}
+            {{- end }}
+            {{- if .Values.logstash.beats.enabled }}
+            - name: beats-port
+              containerPort: {{ .Values.logstash.beats.port }}
+            {{- end }}
+            {{- if .Values.logstash.syslog.enabled }}
+            - name: syslog-port
+              containerPort: {{ .Values.logstash.syslog.port }}
+            {{- end }}
+          command:
+            - "/bin/bash"
+          args:
+            - "-ec"
+            - |
+              plugin list logstash-codec-logfmt || plugin install --version 0.1.1 logstash-codec-logfmt || exit 1
+              plugin list logstash-filter-cidr  || plugin install --version 0.1.6 logstash-filter-cidr  || exit 1
+              exec logstash -f /etc/logstash/conf.d/*.conf
+          env:
+            - name: POD_NAMESPACE
+              value: {{ .Release.Namespace | quote }}
+            - name: POD_SERVICE
+              value: {{ template "fullname" . }}

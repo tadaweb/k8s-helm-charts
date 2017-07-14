@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "fullname" . }}-logstash-kibana-config
+  labels:
+    application: {{ template "fullname" . }}
+    component: logstash
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+data:
+  {{- if .Values.logstash.kibanaSearches }}
+    {{- range $key, $value := .Values.logstash.kibanaSearches }}
+  {{ $key }}: |-
+{{ $value | indent 4 }}
+    {{- end }}
+  {{- end }}

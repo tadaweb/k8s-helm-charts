@@ -1,0 +1,143 @@
+clusterName: elasticsearch
+
+curator:
+  enabled: false
+  image:
+    name: itrust/curator
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    # limits:
+    #   cpu: "100m"
+    #   memory: "256Mi"
+
+  indicesDeleteDays: 30
+  indicesCloseDays: 7
+  schedule: "0 0 0 * * *"
+
+kibana:
+  replicas: 2
+  port: 5601
+  service:
+    loadBalancer: false
+
+  image:
+    name: kibana
+    tag: 4.1.11
+    pullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    # limits:
+    #   cpu: "100m"
+    #   memory: "256Mi"
+
+logstash:
+  replicas: 2
+
+  lumberjack:
+    enabled: true
+    port: 5043
+  beats:
+    enabled: true
+    port: 5044
+  syslog:
+    enabled: true
+    port: 514
+
+  filters: {}
+  kibanaSearches: {}
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    # limits:
+    #   cpu: "100m"
+    #   memory: "256Mi"
+
+  image:
+    name: logstash
+    tag: 1.5.6
+    pullPolicy: IfNotPresent
+  ssl:
+    cert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURvekNDQW91Z0F3SUJBZ0lKQUt5VVo0TjdadEZUTUEwR0NTcUdTSWIzRFFFQkN3VUFNR2d4Q3pBSkJnTlYKQkFZVEFsaFlNUlV3RXdZRFZRUUhEQXhFWldaaGRXeDBJRU5wZEhreEhEQWFCZ05WQkFvTUUwUmxabUYxYkhRZwpRMjl0Y0dGdWVTQk1kR1F4SkRBaUJnTlZCQU1NR3lvdVpHVm1ZWFZzZEM1emRtTXVZMngxYzNSbGNpNXNiMk5oCmJEQWVGdzB4TnpBM01EY3dOelUwTkRsYUZ3MHlOekEzTURVd056VTBORGxhTUdneEN6QUpCZ05WQkFZVEFsaFkKTVJVd0V3WURWUVFIREF4RVpXWmhkV3gwSUVOcGRIa3hIREFhQmdOVkJBb01FMFJsWm1GMWJIUWdRMjl0Y0dGdQplU0JNZEdReEpEQWlCZ05WQkFNTUd5b3VaR1ZtWVhWc2RDNXpkbU11WTJ4MWMzUmxjaTVzYjJOaGJEQ0NBU0l3CkRRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQkFQNnRlOUJ6SnhzZkw0eUFURkRoRVpmUWllWXAKRWh3eHlsQVIyWDZ1clIvNVBCL2IwMWZJM20wS1I5U1lpeThoQ1FHR0NZREVVcGZicXJXbm42N0hIT3RZMXR6UQphNi9VdDZIbWw1cHFEWlgxNnFkZytqNkI3R05tZWdGb0EwVU0yUHFGT3d5T0QvajkralE0bTlhQ3p2aEhQMWFQClRIdG5LemxkVTNJRFFxRG14RWdWa2lFWkgyUTBKRGk2UDBETEVJZU5MS2xFSWlXUlpGNjlvLzNoRHJQdnBUVUsKQzc2UzRDWFkySmRsejBTQzdRVlpWb0p2aG50cEdDV1ZodjNNOUhMOFlGZzFtajFvWlQ0ajRrcEtnejJBcitaawpoUE9PemVKbGFCV3loNld5MzB6RlJLSHRtckZHczYzYmdKNEVHcksyQTJveTJKL0JCNDliTVVJS2lwVUNBd0VBCkFhTlFNRTR3SFFZRFZSME9CQllFRkkwYXVWbGtXRjZJS0VUeFJPS2I0MFRTTnJNQU1COEdBMVVkSXdRWU1CYUEKRkkwYXVWbGtXRjZJS0VUeFJPS2I0MFRTTnJNQU1Bd0dBMVVkRXdRRk1BTUJBZjh3RFFZSktvWklodmNOQVFFTApCUUFEZ2dFQkFNd2lSSkVOS0pxNzRhOXdZZnl5N3h6OSsvaG5zRm1ENWM1Y0VrQ0p2R3N2NUZLdGlXNGhYWE1GCjh0bnRDdjloMjdteTN5bkQ5c0RqamNsaTlzeXBYVVRiM2RKTWVRVndCYnhyQWwvd2J3YWJaN1ZNaytXbDhBVXQKOUZpTEJub2xFanI4eVpCMEM3R1hSOUs0dEYzQURQKzJvZzFrd3hvc1ZrZHhzMUNqamh6RnNtTmM3RzNGQXd5NwpDcnBHVzZaVjY3TzVxcnNNY2NIeW1mUW14b2hMUGZoZmRmeXZJdURseEtjTFhHb0VrRXZRRE9JaTVrQVJ6QzVMCkV5RzlkeHdFbndxKytQdkVLU2FpY1lWVVRpUjJmdGtiUTVJallFdXgreG9ZWFdqaXk5Qlo4QVNTOUgwc1NGQi8KZCtWZnBXcVBTTmtnSHFXc1A1L0tMcm1LTG56OHN2TT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+    key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2Z0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktnd2dnU2tBZ0VBQW9JQkFRRCtyWHZRY3ljYkh5K00KZ0V4UTRSR1gwSW5tS1JJY01jcFFFZGwrcnEwZitUd2YyOU5YeU41dENrZlVtSXN2SVFrQmhnbUF4RktYMjZxMQpwNSt1eHh6cldOYmMwR3V2MUxlaDVwZWFhZzJWOWVxbllQbytnZXhqWm5vQmFBTkZETmo2aFRzTWpnLzQvZm8wCk9Kdldnczc0Uno5V2oweDdaeXM1WFZOeUEwS2c1c1JJRlpJaEdSOWtOQ1E0dWo5QXl4Q0hqU3lwUkNJbGtXUmUKdmFQOTRRNno3NlUxQ2d1K2t1QWwyTmlYWmM5RWd1MEZXVmFDYjRaN2FSZ2xsWWI5elBSeS9HQllOWm85YUdVKwpJK0pLU29NOWdLL21aSVR6anMzaVpXZ1Zzb2Vsc3Q5TXhVU2g3WnF4UnJPdDI0Q2VCQnF5dGdOcU10aWZ3UWVQCld6RkNDb3FWQWdNQkFBRUNnZ0VCQU1idXpHQXZFc1RrdjBlSWtCUTlPbmpUdEdQTWdSRDA4NHRINWhSR2JZVWsKTWdyUXMyMUd3amQ2YUZGd05vaEJ6YjhhN0NGaE9RTFYyNnE1bk1ueFRtMm5uMjRzZjNHQlAwOS94N3dlU3k1dwpRVE10VlV1dVFQQUVCQmxGSGdpNTJHTVgzdUFYdC9KT3NUcEpYYkZaekVHenBZMy9zVVpUZURmKzVrZVF0R0xwClVGRmtyL1IzeE4yS1daVElyZDdFTkhKTjBYN3BiQktvMTQ4cnFuTVpqalhYRkl4Uy9hdHNVTk5ZNFRuMDQ3d3oKMnllWVRqektQZHJBUERKd1VmMGIyeDZ4ZXJFTTVKRW9OaXlkQWNRM3RMem5hak55K3pxV0lPVXArcmd1Y0hpNApKcnpXVkxVZi9YWFQxOHRkalMxbURFeUZsdVY3cUUzM3Y4MHpaZTdWa2dFQ2dZRUEvK1QwWEVUSG9RRWZTb1ZZCjVCd3dKallJUUl4YmRkaDREaGRjWnIxckZrUGRLV29qa2V0Nkh5akpZb25RVmF3NDV2bkpxN2VSeVl5ckI2TlkKZVNuSUNoTGZnb0RGdlpkQzhIM2RwWEM2TVFValdENjN5ZmdPNmc0TVJYSzREZGRmTGtYaCtmeWU2V2xKU2xUbApvSUl2S05jaTdCdjkyUG5sVmc1bmVSYVRBZVVDZ1lFQS9zaG1pTlBySEd6WXppN29oaHpMSlpNOCtObnNmNng5ClF2U3J1UW1OWGhqQWlmQVJnenZuTkhMQUVOenlHZHE5MkV6K2ZzelM5bzUvT0UwMUpwQ2VsQkczcncvRWtTcSsKUGtkSGtPV1pLR1A5bktiRXgrQm9sc0xQb21maUpoTzhFZzZmckYwYzFQQU10SzdvT3djMlpEa0ZEVCtoeVdRcQo2cnBZVWNoYW12RUNnWUJtS2MyWmpPZzZrbzBnbm01bjNBMHBKRWRWSmZSWjcwdTNMSUo2amtOVHgxSmo5M2t1CkI5cGcyRkxXb1hqb3kzS0lYTSswVy95N2dBckVhT1dvc2hLb1d2S2JVcmdmd21VNlNMWVdHQlJ0LzhRbHRoeUEKYVNYak1pcWFDM3dLSXFOZ2dRd0FWMmhHZmYrQnlyVkd5TkwxTmpjK0ZzclpOcVBtSUtnVkF2czhOUUtCZ0VGagp4WTBRZHFNUS9JUE9YamN0WktYOEtBWG1TR0JzTUtuaWljQXZ4MnlEQmNkaEtkMTRubHBEcVMrcXhTZ0ZqL3ZYCnB1bDhRQml2Y2M5TllYcklXeXE5Y1Zzb3ZOWlZGZ1o5M013L1lST1F0aUppV3RiQnJaWWo0WTVaQXgycXF2WW4KY3F1V0tqUXNkOVpYblpxb3V6ajF1V294RHFEVmFINWQzUlVBU3VEQkFvR0JBS0FvT1g1RDNzeW1BME5EM3NkSApUSGlmUTBkOWtDMHVERVhDWFNxdEVTazloeG9BSGNXYjEyNlFlUHo0N081YmMwaXVTbHV2aEIzM0lQSEFrYW0zCjhaVDhwMDRtaXpZUkZKcDhMNFpGVTl6V3ptS3J6SnZUTThQNVJWYnd2UitvRGxLVG96UUtXL3F2eXl1ZWhlb2IKZy9ZQlJoVVVnOXk1MWJpWndGOW9lempwCi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K
+
+elasticsearch:
+  # Add a comma separated list of plugins.
+  #
+  # bootstrapInstPlugins:
+  # bootstrapRmPlugins:
+  disableXPack: true
+  transportPort: 9300
+  restPort: 9200
+
+  image:
+    name: elasticsearch
+    tag: 1.7.5
+    pullPolicy: IfNotPresent
+
+  persistentVolume:
+    enabled: true
+    storageClass: default
+    accessModes:
+      - ReadWriteOnce
+    size: 30Gi
+    annotations: {}
+
+  master:
+    replicas: 3
+    minHeapSize: "256m"
+    maxHeapSize: "256m"
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      # limits:
+      #   cpu: "100m"
+      #   memory: "256Mi"
+
+  data:
+    replicas: 2
+    minHeapSize: "256m"
+    maxHeapSize: "256m"
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "2Gi"
+      # limits:
+      #   cpu: "100m"
+      #   memory: "256Mi"
+
+  client:
+    replicas: 2
+    minHeapSize: "256m"
+    maxHeapSize: "256m"
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "256Mi"
+      # limits:
+      #   cpu: "100m"
+      #   memory: "256Mi"
+
+metrics:
+  enabled: false
+  port: 9114
+  image:
+    name: justwatch/elasticsearch_exporter
+    tag: 1.0.0
+    imagePullPolicy: IfNotPresent
+  queryAll: true
+  timeout: 20s
+  resources:
+    requests:
+      cpu: "50m"
+      memory: 128Mi

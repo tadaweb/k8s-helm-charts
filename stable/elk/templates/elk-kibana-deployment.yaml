@@ -1,0 +1,46 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}-kibana
+  labels:
+    application: {{ template "fullname" . }}
+    component: kibana
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.kibana.replicas }}
+  selector:
+    matchLabels:
+      application: {{ template "fullname" . }}
+      component: kibana
+  template:
+    metadata:
+      name: {{ template "fullname" . }}-kibana
+      labels:
+        application: {{ template "fullname" . }}
+        component: kibana
+        chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+        heritage: {{ .Release.Service }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: kibana
+          image: {{ .Values.kibana.image.name }}:{{ .Values.kibana.image.tag }}
+          imagePullPolicy: {{ .Values.kibana.image.pullPolicy }}
+          resources:
+{{ toYaml .Values.kibana.resources | indent 12 }}
+          ports:
+            - name: kibana
+              containerPort: {{ .Values.kibana.port }}
+          env:
+            - name: POD_NAMESPACE
+              value: {{ .Release.Namespace | quote }}
+            - name: POD_SERVICE
+              value: {{ template "fullname" . }}
+            - name: ELASTICSEARCH_URL
+              value: "http://{{ template "fullname" . }}-elasticsearch-api.{{ .Release.Namespace }}.svc.cluster.local:9200"
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.kibana.port }}
+            timeoutSeconds: 1

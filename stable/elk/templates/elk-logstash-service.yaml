@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "fullname" . }}-logstash
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    application: {{ template "fullname" . }}
+    component: logstash
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  type: ClusterIP
+  selector:
+    application: {{ template "fullname" . }}
+    component: logstash
+  ports:
+    {{- if .Values.logstash.lumberjack.enabled }}
+    - name: lumberjack-port
+      port: {{ .Values.logstash.lumberjack.port }}
+      targetPort: {{ .Values.logstash.lumberjack.port }}
+    {{- end }}
+    {{- if .Values.logstash.beats.enabled }}
+    - name: beats-port
+      port: {{ .Values.logstash.beats.port }}
+      targetPort: {{ .Values.logstash.beats.port }}
+    {{- end }}
+    {{- if .Values.logstash.syslog.enabled }}
+    - name: syslog-port
+      port: {{ .Values.logstash.syslog.port }}
+      targetPort: {{ .Values.logstash.syslog.port }}
+    {{- end }}

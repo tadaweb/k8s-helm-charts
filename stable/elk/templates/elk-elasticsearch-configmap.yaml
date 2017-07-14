@@ -1,0 +1,45 @@
+{{- $compare2 := semver .Values.elasticsearch.image.tag | (semver "2.0.0").Compare -}}
+{{- $compare5 := semver .Values.elasticsearch.image.tag | (semver "5.0.0").Compare -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "fullname" . }}-elasticsearch-config
+  labels:
+    application: {{ template "fullname" . }}
+    component: elasticsearch
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+data:
+  elasticsearch.yml: |-
+    node.name: ${ES_NODE_NAME}
+    node.master: ${ES_NODE_MASTER}
+    node.data: ${ES_NODE_DATA}
+    cluster.name: ${ES_CLUSTER_NAME}
+
+    # enable it when --ulimit memlock=-1:-1 will be available on kubernetes too
+    bootstrap.memory_lock: false
+    bootstrap.system_call_filter: false
+
+    network.host: 0.0.0.0
+    transport.tcp.port: ${ES_TRANSPORT_PORT}
+    http.enabled: ${ES_HTTP_ENABLED}
+    http.port: ${ES_HTTP_PORT}
+
+    indices.fielddata.cache.size: 50%
+    script.inline: true
+
+    {{- if eq $compare5 1 }}
+    discovery.zen.ping.multicast.enabled: false
+    {{- end }}
+    discovery.zen.minimum_master_nodes: {{ if ge (.Values.elasticsearch.master.replicas | int) 3 }}2{{ else }}1{{ end }}
+    {{- if eq $compare2 1 }}
+    cloud.k8s.servicedns: ${POD_SERVICE}
+    discovery.type: io.fabric8.elasticsearch.discovery.k8s.K8sDiscoveryModule
+    {{- else }}
+    discovery.zen.hosts_provider: kubernetes
+    cloud:
+      kubernetes:
+        service: ${POD_SERVICE}
+        namespace: ${POD_NAMESPACE}
+    {{- end }}

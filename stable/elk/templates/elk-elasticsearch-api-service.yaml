@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "fullname" . }}-elasticsearch-api
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    application: {{ template "fullname" . }}
+    component: elasticsearch
+    es-role: client
+    {{- if .Values.metrics.enabled }}
+    metrics_port: {{ .Values.metrics.port | quote }}
+    metrics_exporter: elk
+    {{- end }}
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  type: ClusterIP
+  selector:
+    application: {{ template "fullname" . }}
+    component: elasticsearch
+    es-role: client
+  ports:
+    - name: rest
+      port: {{ .Values.elasticsearch.restPort }}
+      targetPort: {{ .Values.elasticsearch.restPort }}
+    {{- if .Values.metrics.enabled }}
+    - name: metrics
+      port: {{ .Values.metrics.port }}
+      targetPort: {{ .Values.metrics.port }}
+    {{- end }}

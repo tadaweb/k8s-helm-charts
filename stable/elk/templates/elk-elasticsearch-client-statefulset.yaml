@@ -1,0 +1,133 @@
+{{- $compare5 := semver .Values.elasticsearch.image.tag | (semver "5.0.0").Compare -}}
+{{- $compare2 := semver .Values.elasticsearch.image.tag | (semver "2.0.0").Compare -}}
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  labels:
+    application: {{ template "fullname" . }}
+    component: elasticsearch
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+    es-role: client
+  name: {{ template "fullname" . }}-elasticsearch-client
+spec:
+  serviceName: {{ template "fullname" . }}-elasticsearch
+  replicas: {{ .Values.elasticsearch.client.replicas }}
+  template:
+    metadata:
+      labels:
+        application: {{ template "fullname" . }}
+        component: elasticsearch
+        chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+        heritage: {{ .Release.Service }}
+        release: {{ .Release.Name }}
+        es-role: client
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+          "name": "sysctl",
+            "image": "busybox",
+            "imagePullPolicy": "IfNotPresent",
+            "command": ["sysctl", "-w", "vm.max_map_count=262144"],
+            "securityContext": {
+              "privileged": true
+            }
+          }
+        ]'
+    spec:
+      serviceAccountName: {{ template "fullname" . }}-elasticsearch-sa
+      volumes:
+        - name: es-config
+          configMap:
+            name: {{ template "fullname" . }}-elasticsearch-config
+      containers:
+        {{- if .Values.metrics.enabled }}
+        - name: metrics
+          image: "{{ .Values.metrics.image.name }}:{{ .Values.metrics.image.tag }}"
+          imagePullPolicy: "{{ .Values.metrics.image.pullPolicy }}"
+          resources:
+{{ toYaml .Values.metrics.resources | indent 12 }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.metrics.port }}
+          args:
+            - "-web.listen-address"
+            - ":{{ .Values.metrics.port }}"
+            {{- if .Values.metrics.queryAll }}
+            - "-es.all"
+            {{- end }}
+            - "-es.timeout"
+            - "{{ .Values.metrics.timeout }}"
+            - "-es.uri"
+            - "http://localhost:{{ .Values.elasticsearch.restPort }}"
+        {{- end }}
+        - name: elk-elasticsearch-client
+          image: "{{ .Values.elasticsearch.image.name }}:{{ .Values.elasticsearch.image.tag }}"
+          imagePullPolicy: "{{ .Values.elasticsearch.image.pullPolicy }}"
+          command:
+            - "/bin/bash"
+          args:
+            - "-ec"
+            - |
+              {{- /* check if version is < 2.0.0 */}}
+              {{- if eq $compare2 1 }}
+              bin/plugin install io.fabric8/elasticsearch-cloud-kubernetes/1.3.0
+              {{- else }}
+                {{- /* check if version is < 5.0.0 */}}
+                {{- if eq $compare5 1 }}
+              bin/plugin install io.fabric8:elasticsearch-cloud-kubernetes:{{ .Values.elasticsearch.image.tag }}
+                {{- else }}
+              mv /usr/share/elasticsearch/plugins/x-pack /usr/share/elasticsearch/plugins/.removing-x-pack
+              mv /usr/share/elasticsearch/plugins/.removing-x-pack /usr/share/elasticsearch/plugins/x-pack
+              bin/elasticsearch-plugin remove x-pack
+              bin/elasticsearch-plugin install io.fabric8:elasticsearch-cloud-kubernetes:{{ .Values.elasticsearch.image.tag }}
+                {{- end }}
+              {{- end }}
+
+              [ -z $ES_RM_PLUGINS ] || {{ if eq $compare5 1 }}bin/plugin{{ else }}bin/elasticsearch-plugin{{ end }} remove $(echo ${ES_RM_PLUGINS} | tr ',' ' ')
+              [ -z $ES_INST_PLUGINS ] || {{ if eq $compare5 1 }}bin/plugin{{ else }}bin/elasticsearch-plugin{{ end }} install $(echo ${ES_INST_PLUGINS} | tr ',' ' ')
+
+              exec {{ if eq $compare5 1 }}/docker-entrypoint.sh elasticsearch{{ else }}/bin/bash bin/es-docker{{ end }}
+          ports:
+            - name: transport
+              containerPort: {{ .Values.elasticsearch.transportPort }}
+            - name: rest
+              containerPort: {{ .Values.elasticsearch.restPort }}
+          resources:
+{{ toYaml .Values.elasticsearch.client.resources | indent 12 }}
+          env:
+            - name: POD_NAMESPACE
+              value: {{ .Release.Namespace | quote }}
+            - name: POD_SERVICE
+              value: {{ template "fullname" . }}-elasticsearch
+            {{- if .Values.elasticsearch.bootstrapInstPlugins }}
+            - name: ES_INST_PLUGINS
+              value: {{ .Values.elasticsearch.bootstrapInstPlugins | quote }}
+            {{- end }}
+            {{- if .Values.elasticsearch.bootstrapRmPlugins | quote }}
+            - name: ES_RM_PLUGINS
+              value: {{ .Values.elasticsearch.bootstrapRmPlugins | quote }}
+            {{- end }}
+            - name: ES_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ES_NODE_DATA
+              value: "false"
+            - name: ES_NODE_MASTER
+              value: "false"
+            - name: ES_CLUSTER_NAME
+              value: {{ .Values.clusterName | quote }}
+            - name: ES_JAVA_OPTS
+              value: "-Xms{{ .Values.elasticsearch.client.minHeapSize }} -Xmx{{ .Values.elasticsearch.client.maxHeapSize }}"
+            - name: ES_HTTP_ENABLED
+              value: "true"
+            - name: ES_HTTP_PORT
+              value: "{{ .Values.elasticsearch.restPort }}"
+            - name: ES_TRANSPORT_PORT
+              value: "{{ .Values.elasticsearch.transportPort  }}"
+          volumeMounts:
+            - name: es-config
+              mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+              subPath: elasticsearch.yml
