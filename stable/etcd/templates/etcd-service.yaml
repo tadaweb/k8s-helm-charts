@@ -10,6 +10,10 @@ metadata:
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     application: {{ template "fullname" . }}
     component: {{ template "name" . }}
+    {{- if .Values.metrics.enabled }}
+    metrics_port: {{ .Value.metrics.port | quote }}
+    metrics_exporter: etcd
+    {{- end }}
 spec:
   clusterIP: None
   ports:

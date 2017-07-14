@@ -14,6 +14,10 @@ metadata:
     chart: {{ .Chart.Name }}-{{ .Chart.Version }}
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
+    {{- if .Values.metrics.enabled }}
+    metrics_port: {{ .Value.metrics.port | quote }}
+    metrics_exporter: rabbitmq
+    {{- end }}
 spec:
   type: ClusterIP
   clusterIP: None
