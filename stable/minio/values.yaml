@@ -1,0 +1,107 @@
+# Accepted values are 'standalone', 'gateway', 'distributed', 'shared'
+mode: "standalone"
+# The provider is only valid in gateway mode
+provider: "azure"
+# replicas is valid with distributed/shared/gateway modes
+replicas: 4
+
+image:
+  name: "minio/minio"
+  tag: "RELEASE.2017-06-13T19-01-01Z"
+  pullPolicy: "IfNotPresent"
+
+# In case of mode=gateway this must have credentials to access the cloud
+creds:
+  accessKey: "AKIAIOSFODNN7EXAMPLE"
+  secretKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+
+service:
+  loadBalancer: false
+
+# The storage is enabled both in distributed and standalone.
+persistentVolume:
+  enabled: true
+  size: 10Gi
+  storageClass: default
+  accessModes:
+    - ReadWriteOnce
+  annotations: {}
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "512Mi"
+# limits:
+#   cpu: 100m
+#   memory: 512Mi
+
+
+## Below settings can be used to setup event notifications as explained here.
+## https://docs.minio.io/docs/minio-bucket-notification-guide
+##
+minioConfig:
+  aqmp:
+    enable: false
+    url: ""
+    exchange: ""
+    routingKey: ""
+    exchangeType: ""
+    deliveryMode: 0
+    mandatory: false
+    immediate: false
+    durable: false
+    internal: false
+    noWait: false
+    autoDeleted: false
+  nats:
+    enable: false
+    address: ""
+    subject: ""
+    username: ""
+    password: ""
+    token: ""
+    secure: false
+    pingInterval: 0
+    enableStreaming: false
+    clusterID: ""
+    clientID: ""
+    async: false
+    maxPubAcksInflight: 0
+  elasticsearch:
+    enable: false
+    format: "namespace"
+    url: ""
+    index: ""
+  redis:
+    enable: false
+    format: "namespace"
+    address: ""
+    password: ""
+    key: ""
+  postgresql:
+    enable: false
+    format: "namespace"
+    connectionString: ""
+    table: ""
+    host: ""
+    port: ""
+    user: ""
+    password: ""
+    database: ""
+  kafka:
+    enable: false
+    brokers: "null"
+    topic: ""
+  webhook:
+    enable: false
+    endpoint: ""
+  mysql:
+    enable: false
+    format: "namespace"
+    dsnString: ""
+    table: ""
+    host: ""
+    port: ""
+    user: ""
+    password: ""
+    database: ""

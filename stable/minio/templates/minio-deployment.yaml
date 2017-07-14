@@ -1,0 +1,78 @@
+{{- if eq .Values.mode "standalone" "shared" "gateway" }}
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    application: {{ template "fullname" . }}
+    component: {{ template "name" . }}
+spec:
+  {{- if eq .Values.mode "shared" "gateway" }}
+  replicas: {{ .Values.replicas }}
+  {{- end }}
+  selector:
+    matchLabels:
+      application: {{ template "fullname" . }}
+  template:
+    metadata:
+      name: {{ template "fullname" . }}
+      labels:
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        release: "{{ .Release.Name }}"
+        heritage: "{{ .Release.Service }}"
+        application: {{ template "fullname" . }}
+        component: {{ template "name" . }}
+    spec:
+      volumes:
+        - name: minio-data
+        {{- if and .Values.persistentVolume.enabled (ne .Values.mode "gateway") }}
+          persistentVolumeClaim:
+            claimName: {{ template "fullname" . }}-pvc
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
+        {{- if ne .Values.mode "gateway" }}
+        - name: minio-config
+          configMap:
+            name: {{ template "fullname" . }}-config
+        {{- end }}
+      containers:
+        - name: minio
+          image: {{ .Values.image.name }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if ne .Values.mode "gateway" }}
+          args: ["--config-dir", "/minio/config", "server", "/minio/data"]
+          {{- else }}
+          args: ["gateway", "{{ .Values.provider }}"]
+          {{- end }}
+          volumeMounts:
+            - name: minio-data
+              mountPath: "/minio/data"
+          {{- if ne .Values.mode "gateway" }}
+            - name: minio-config
+              mountPath: "/minio/config"
+          {{- end }}
+          ports:
+            - name: service
+              containerPort: 9000
+          env:
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "fullname" . }}-creds
+                  key: accesskey
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "fullname" . }}-creds
+                  key: secretkey
+          livenessProbe:
+            tcpSocket:
+              port: 9000
+            timeoutSeconds: 1
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+{{- end }}

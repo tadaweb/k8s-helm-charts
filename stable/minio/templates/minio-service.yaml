@@ -1,0 +1,24 @@
+{{- if eq .Values.mode "distributed" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "fullname" . }}
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    application: {{ template "fullname" . }}
+    component: {{ template "name" . }}
+spec:
+  clusterIP: None
+  ports:
+    - name: service
+      port: 9000
+      targetPort: 9000
+      protocol: TCP
+  selector:
+    application: {{ template "fullname" . }}
+    component: {{ template "name" . }}
+{{- end }}

@@ -1,0 +1,25 @@
+{{- if and (.Values.persistentVolume.enabled) (eq .Values.mode "standalone" "shared") }}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: "{{ template "fullname" . }}-pvc"
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    application: {{ template "fullname" . }}
+    component: {{ template "name" . }}
+spec:
+  annotations:
+    "helm.sh/resource-policy": keep
+  accessModes:
+    {{- if eq .Values.mode "shared" }}
+    - ReadWriteMany
+    {{- else }}
+    - ReadWriteOnce
+    {{- end }}
+  storageClassName: {{ .Values.persistentVolume.class | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.persistentVolume.size | quote }}
+{{- end }}

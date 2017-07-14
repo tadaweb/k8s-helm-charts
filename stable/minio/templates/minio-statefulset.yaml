@@ -1,0 +1,86 @@
+{{- if eq .Values.mode "distributed" }}
+{{ $nodeCount := .Values.replicas | int }}
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    application: {{ template "fullname" . }}
+    component: {{ template "name" . }}
+spec:
+  serviceName: {{ template "fullname" . }}
+  replicas: {{ .Values.replicas }}
+  template:
+    metadata:
+      name: {{ template "fullname" . }}
+      labels:
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        release: "{{ .Release.Name }}"
+        heritage: "{{ .Release.Service }}"
+        application: {{ template "fullname" . }}
+        component: {{ template "name" . }}
+    spec:
+      volumes:
+        - name: minio-config
+          configMap:
+            name: {{ template "fullname" . }}-config
+        {{- if not .Values.persistentVolume.enabled }}
+        - name: minio-data
+          emptyDir: {}
+        {{- end }}
+      containers:
+        - name: minio
+          image: {{ .Values.image.name }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - server
+            - "--config-dir"
+            - "/minio/config"
+            {{- range $i := until $nodeCount }}
+            - http://{{ template "fullname" $ }}-{{$i}}.{{ template "fullname" $ }}.{{ $.Release.Namespace }}.svc.cluster.local{{ $.Values.mountPath }}
+            {{- end }}
+          volumeMounts:
+            - name: minio-data
+              mountPath: "/minio/data"
+            - name: minio-config
+              mountPath: "/minio/config"
+          ports:
+            - name: service
+              containerPort: 9000
+          env:
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "fullname" . }}-creds
+                  key: accesskey
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "fullname" . }}-creds
+                  key: secretkey
+            - name: POD_NAMESPACE
+              value: {{ .Release.Namespace | quote }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+  {{- if .Values.persistentVolume.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: minio-data
+        annotations:
+        {{- range $key, $value := .Values.persistentVolume.annotations }}
+          {{ $key }}: {{ $value }}
+        {{- end }}
+      spec:
+        storageClassName: {{ .Values.persistentVolume.storageClass | quote }}
+        accessModes:
+        {{- range $key, $value := .Values.persistentVolume.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistentVolume.size }}
+  {{- end }}
+{{- end }}
