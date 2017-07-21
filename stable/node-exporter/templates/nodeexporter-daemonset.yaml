@@ -1,0 +1,39 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    application: {{ template "fullname" . }}
+    component: {{ template "name" . }}
+spec:
+  template:
+    metadata:
+      name:  node-exporter
+      labels:
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        release: "{{ .Release.Name }}"
+        heritage: "{{ .Release.Service }}"
+        application: {{ template "fullname" . }}
+        component: {{ template "name" . }}
+      annotations:
+        prometheus.io/scrape: "true"
+    spec:
+      hostPID: true
+      containers:
+        - name:  node-exporter
+          image: "{{ .Values.image.name }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            privileged: true
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.port }}
+          args:
+            - "-web.listen-address"
+            - ":{{ .Values.port }}"
+            - "-collector.systemd.private"
+            - "-collectors.enabled"
+            - "conntrack,diskstats,entropy,edac,filefd,filesystem,hwmon,infiniband,loadavg,mdadm,meminfo,netdev,netstat,sockstat,stat,textfile,time,uname,vmstat,zfs,interrupts,ipvs,systemd"

@@ -17,6 +17,12 @@ creds:
 
 service:
   loadBalancer: false
+  annotations: {}
+  ingress:
+    enabled: false
+    annotations: {}
+    hosts: []
+    tls: []
 
 # The storage is enabled both in distributed and standalone.
 persistentVolume:

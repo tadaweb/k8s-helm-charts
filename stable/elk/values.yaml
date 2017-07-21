@@ -1,5 +1,11 @@
 clusterName: elasticsearch
 
+service:
+  annotations: {}
+
+rbac:
+  enabled: false
+
 curator:
   enabled: false
   image:
@@ -24,6 +30,12 @@ kibana:
   port: 5601
   service:
     loadBalancer: false
+    annotations: {}
+    ingress:
+      enabled: false
+      annotations: {}
+      hosts: []
+      tls: []
 
   image:
     name: kibana
@@ -40,6 +52,8 @@ kibana:
 
 logstash:
   replicas: 2
+  service:
+    annotations: {}
 
   lumberjack:
     enabled: true
@@ -83,6 +97,9 @@ elasticsearch:
     name: elasticsearch
     tag: 1.7.5
     pullPolicy: IfNotPresent
+
+  service:
+    annotations: {}
 
   persistentVolume:
     enabled: true

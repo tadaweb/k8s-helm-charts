@@ -1,0 +1,30 @@
+{{- if .Values.rockmongo.service.ingress.enabled }}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ template "fullname" . }}-rockmongo
+  {{- if .Values.rockmongo.service.ingress.annotations }}
+  annotations:
+{{ toYaml .Values.rockmongo.service.ingress.annotations | indent 4 }}
+  {{- end }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    application: {{ template "fullname" . }}
+    component: rockmongo
+spec:
+  rules:
+  {{- range .Values.rockmongo.service.ingress.hosts }}
+    - host: {{ . }}
+      http:
+        paths:
+          - backend:
+              serviceName: {{ template "fullname" . }}-rockmongo
+              servicePort: {{ .Values.port }}
+  {{- end }}
+  {{- if .Values.rockmongo.service.ingress.tls }}
+  tls:
+{{ toYaml .Values.rockmongo.service.ingress.tls | indent 4 }}
+  {{- end }}
+{{- end }}

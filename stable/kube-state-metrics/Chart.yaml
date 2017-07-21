@@ -1,0 +1,9 @@
+name: kube-state-metrics
+version: 0.1.0
+description: kube-state-metrics is a simple service that listens to the Kubernetes API server and generates metrics about the state of the objects. Prometheus exporter.
+home: https://github.com/kubernetes/kube-state-metrics
+sources:
+  - https://github.com/kubernetes/kube-state-metrics
+maintainers:
+  - name: Giuseppe Pellegrino
+    email: g.pellegrino@tadaweb.com

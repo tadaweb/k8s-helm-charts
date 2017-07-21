@@ -14,7 +14,7 @@
 
 FROM alpine:3.4
 
-LABEL mainteiner="Giuseppe Pellegrino <g.pellegrino@tadaweb.com>"
+LABEL maintainer="Giuseppe Pellegrino <g.pellegrino@tadaweb.com>"
 
 RUN apk update && apk add bash && wget -qO /peer-finder http://storage.googleapis.com/kubernetes-release/pets/peer-finder
 

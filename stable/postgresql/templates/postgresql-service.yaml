@@ -5,6 +5,13 @@ metadata:
   name: {{ template "fullname" . }}
   annotations:
     service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+    {{- if .Values.service.annotations }}
+{{ toYaml .Values.service.annotations | indent 4 }}
+    {{- end }}
+    {{- if .Values.metrics.enabled }}
+    prometheus.io/scrape: "true"
+    prometheus.io/port: {{ .Values.metrics.port }}
+    {{- end }}
   labels:
     application: {{ template "fullname" . }}
     component: {{ template "name" . }}
@@ -12,10 +19,6 @@ metadata:
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
     supervisor: patroni
-    {{- if .Values.metrics.enabled }}
-    metrics_port: {{ .Value.metrics.port | quote }}
-    metrics_exporter: postgresql
-    {{- end }}
 spec:
   type: ClusterIP
   clusterIP: None
@@ -23,11 +26,6 @@ spec:
     - name: postgresql
       port: 5432
       targetPort: 5432
-    {{- if .Values.metrics.enabled }}
-    - name: pgsql-metrics
-      port: {{ .Values.metrics.port }}
-      targetPort: {{ .Values.metrics.port }}
-    {{- end }}
   selector:
     application: {{ template "fullname" . }}
     component: {{ template "name" . }}

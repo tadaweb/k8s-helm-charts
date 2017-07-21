@@ -10,6 +10,9 @@ metadata:
     component: kibana
   annotations:
     service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+    {{- if .Values.kibana.service.annotations }}
+{{ toYaml .Values.kibana.service.annotations | indent 4 }}
+    {{- end }}
 spec:
   {{- if .Values.kibana.service.loadBalancer }}
   type: LoadBalancer

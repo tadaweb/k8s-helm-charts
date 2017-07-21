@@ -1,0 +1,119 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    application: {{ template "fullname" . }}
+    component: {{ template "name" . }}
+spec:
+  serviceName: {{ template "fullname" . }}
+  replicas: {{ default 1 .Values.replicas }}
+  template:
+    metadata:
+      labels:
+        {{- if and (.Values.tolerations) (le .Capabilities.KubeVersion.Minor "5") }}
+        scheduler.alpha.kubernetes.io/tolerations: '{{ toJson .Values.tolerations }}'
+        {{- end }}
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        release: "{{ .Release.Name }}"
+        heritage: "{{ .Release.Service }}"
+        application: {{ template "fullname" . }}
+        component: {{ template "name" . }}
+    spec:
+      serviceAccountName: {{ template "fullname" . }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      {{- end }}
+      {{- if and (.Values.tolerations) (ge .Capabilities.KubeVersion.Minor "6") }}
+      tolerations:
+{{ toYaml .Values.tolerations | indent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ template "name" . }}
+          image: "{{ .Values.image.name }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.port }}
+            failureThreshold: 1
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 2
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.port }}
+            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 2
+          ports:
+            - name: http
+              containerPort: {{ .Values.port }}
+            {{- if .Values.ssl.enabled }}
+            - name: https
+              containerPort: {{ .Values.ssl.port }}
+            {{- end }}
+            {{- if .Values.metrics.enabled }}
+            - name: metrics
+              containerPort: {{ .Values.metrics.port }}
+            {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /traefik.toml
+              subPath: traefik.toml
+            {{- if .Values.ssl.enabled }}
+            - name: ssl
+              mountPath: /etc/ssl/traefik
+            {{- end }}
+            {{- if .Values.config.acme.enabled }}
+            - name: acme
+              mountPath: /acme
+            {{- end }}
+          args:
+            - "--configfile=/traefik.toml"
+      volumes:
+        - name: config
+          configMap:
+            name: {{ template "fullname" . }}
+        {{- if .Values.ssl.enabled }}
+        - name: ssl
+          secret:
+            secretName: {{ template "fullname" . }}-certs
+        {{- end }}
+        {{- if and (.Values.config.acme.enabled) (not (.Values.config.acme.persistentVolume.enabled)) }}
+        - name: acme
+          emptyDir: {}
+        {{- end }}
+{{- if and .Values.config.acme.enabled .Values.config.acme.persistentVolume.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: acme
+        labels:
+          chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+          release: "{{ .Release.Name }}"
+          heritage: "{{ .Release.Service }}"
+          application: {{ template "fullname" . }}
+          component: {{ template "name" . }}
+        annotations:
+        {{- range $key, $value := .Values.config.acme.persistentVolume.annotations }}
+          {{ $key }}: {{ $value }}
+        {{- end }}
+      spec:
+        storageClassName: {{ .Values.config.acme.persistentVolume.storageClass | quote }}
+        accessModes:
+        {{- range .Values.config.acme.persistentVolume.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.config.acme.persistentVolume.size | quote }}
+{{- end }}

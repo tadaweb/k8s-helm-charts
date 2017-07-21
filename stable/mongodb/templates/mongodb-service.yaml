@@ -5,29 +5,25 @@ metadata:
   name: {{ template "fullname" . }}
   annotations:
     service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
-  {{- if .Values.serviceAnnotations }}
-{{ toYaml .Values.serviceAnnotations | indent 4 }}
-  {{- end }}
+    {{- if .Values.service.annotations }}
+{{ toYaml .Values.service.annotations | indent 4 }}
+    {{- end }}
+    {{- if .Values.metrics.enabled }}
+    prometheus.io/scrape: "true"
+    prometheus.io/port: {{ .Values.metrics.port }}
+    {{- end }}
   labels:
     application: {{ template "fullname" . }}
     component: {{ template "name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version }}
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
-    {{- if .Values.metrics.enabled }}
-    metrics_port: {{ .Value.metrics.port | quote }}
-    metrics_exporter: mongodb
-    {{- end }}
 spec:
   type: ClusterIP
   clusterIP: None
   ports:
     - name: peer
       port: {{ .Values.port }}
-    {{- if .Values.metrics.enabled }}
-    - name: metrics
-      port: {{ .Values.metrics.port }}
-    {{- end }}
   selector:
     application: {{ template "fullname" . }}
     component: {{ template "name" . }}

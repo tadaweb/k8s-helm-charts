@@ -36,11 +36,11 @@ spec:
           }
         ]'
     spec:
-      serviceAccountName: {{ template "fullname" . }}-sa
+      serviceAccountName: {{ template "fullname" . }}
       volumes:
         - name: es-config
           configMap:
-            name: {{ template "fullname" . }}-config
+            name: {{ template "fullname" . }}
       containers:
         - name: {{ template "name" . }}-master
           image: "{{ .Values.image.name }}:{{ .Values.image.tag }}"

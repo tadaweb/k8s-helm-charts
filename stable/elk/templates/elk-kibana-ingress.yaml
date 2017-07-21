@@ -1,0 +1,30 @@
+{{- if .Values.kibana.service.ingress.enabled }}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ template "fullname" . }}-kibana
+  {{- if .Values.kibana.service.ingress.annotations }}
+  annotations:
+{{ toYaml .Values.kibana.service.ingress.annotations | indent 4 }}
+  {{- end }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    application: {{ template "fullname" . }}
+    component: kibana
+spec:
+  rules:
+  {{- range .Values.kibana.service.ingress.hosts }}
+    - host: {{ . }}
+      http:
+        paths:
+          - backend:
+              serviceName: {{ template "fullname" . }}-kibana
+              servicePort: {{ .Values.kibana.port }}
+  {{- end }}
+  {{- if .Values.kibana.service.ingress.tls }}
+  tls:
+{{ toYaml .Values.kibana.service.ingress.tls | indent 4 }}
+  {{- end }}
+{{- end }}

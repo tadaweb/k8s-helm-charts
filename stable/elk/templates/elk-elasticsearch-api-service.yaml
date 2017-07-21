@@ -9,12 +9,15 @@ metadata:
     application: {{ template "fullname" . }}
     component: elasticsearch
     es-role: client
-    {{- if .Values.metrics.enabled }}
-    metrics_port: {{ .Values.metrics.port | quote }}
-    metrics_exporter: elk
-    {{- end }}
   annotations:
     service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+    {{- if .Values.elasticsearch.service.annotations }}
+{{ toYaml .Values.elasticsearch.service.annotations | indent 4 }}
+    {{- end }}
+    {{- if .Values.metrics.enabled }}
+    prometheus.io/scrape: "true"
+    prometheus.io/port: {{ .Values.metrics.port }}
+    {{- end }}
 spec:
   type: ClusterIP
   selector:
@@ -25,8 +28,3 @@ spec:
     - name: rest
       port: {{ .Values.elasticsearch.restPort }}
       targetPort: {{ .Values.elasticsearch.restPort }}
-    {{- if .Values.metrics.enabled }}
-    - name: metrics
-      port: {{ .Values.metrics.port }}
-      targetPort: {{ .Values.metrics.port }}
-    {{- end }}

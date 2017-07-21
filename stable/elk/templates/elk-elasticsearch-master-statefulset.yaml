@@ -36,11 +36,11 @@ spec:
           }
         ]'
     spec:
-      serviceAccountName: {{ template "fullname" . }}-elasticsearch-sa
+      serviceAccountName: {{ template "fullname" . }}-elasticsearch
       volumes:
         - name: es-config
           configMap:
-            name: {{ template "fullname" . }}-elasticsearch-config
+            name: {{ template "fullname" . }}-elasticsearch
       containers:
         - name: elk-elasticsearch-master
           image: "{{ .Values.elasticsearch.image.name }}:{{ .Values.elasticsearch.image.tag }}"

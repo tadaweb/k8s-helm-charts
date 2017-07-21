@@ -3,6 +3,13 @@ replicas: 3
 
 service:
   loadBalancer: false
+  # Annotations to be added to the service
+  annotations: {}
+  ingress:
+    enabled: false
+    annotations: {}
+    hosts: []
+    tls: []
 
 # management port is mgmtPort if no SSL, mgmtPort-1 otherwise
 config:
@@ -53,9 +60,6 @@ persistentVolume:
     - ReadWriteOnce
   size: 1Gi
   annotations: {}
-
-# Annotations to be added to the service
-serviceAnnotations: {}
 
 metrics:
   enabled: false

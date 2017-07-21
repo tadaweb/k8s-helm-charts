@@ -38,11 +38,11 @@ spec:
     spec:
       securityContext:
         fsGroup: 1000
-      serviceAccountName: {{ template "fullname" . }}-sa
+      serviceAccountName: {{ template "fullname" . }}
       volumes:
         - name: es-config
           configMap:
-            name: {{ template "fullname" . }}-config
+            name: {{ template "fullname" . }}
       {{- if not .Values.persistentVolume.enabled }}
         - name: es-data-vol
           emptyDir: {}

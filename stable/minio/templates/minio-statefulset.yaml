@@ -26,7 +26,7 @@ spec:
       volumes:
         - name: minio-config
           configMap:
-            name: {{ template "fullname" . }}-config
+            name: {{ template "fullname" . }}
         {{- if not .Values.persistentVolume.enabled }}
         - name: minio-data
           emptyDir: {}

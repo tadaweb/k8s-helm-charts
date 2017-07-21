@@ -1,5 +1,12 @@
 clusterName: elasticsearch
 
+service:
+  loadBalancer: false
+  annotations: {}
+
+rbac:
+  enabled: false
+
 disableXPack: true
 
 # Add a comma separated list of plugins.
@@ -55,8 +62,6 @@ data:
 
 client:
   replicas: 2
-  service:
-    loadBalancer: false
   minHeapSize: "256m"
   maxHeapSize: "256m"
   resources:

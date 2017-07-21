@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ template "fullname" . }}-config
+  name: {{ template "fullname" . }}
   labels:
     application: {{ template "fullname" . }}
     component: {{ template "name" . }}

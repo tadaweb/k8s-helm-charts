@@ -38,11 +38,11 @@ spec:
     spec:
       securityContext:
         fsGroup: 1000
-      serviceAccountName: {{ template "fullname" . }}-elasticsearch-sa
+      serviceAccountName: {{ template "fullname" . }}-elasticsearch
       volumes:
         - name: es-config
           configMap:
-            name: {{ template "fullname" . }}-elasticsearch-config
+            name: {{ template "fullname" . }}-elasticsearch
       {{- if not .Values.elasticsearch.persistentVolume.enabled }}
         - name: es-data-vol
           emptyDir: {}

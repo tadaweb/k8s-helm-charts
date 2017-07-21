@@ -1,0 +1,32 @@
+replicas: 1
+port: 8080
+
+image:
+  name: gcr.io/google_containers/kube-state-metrics
+  tag: v0.4.1
+  pullPolicy: IfNotPresent
+
+nodeSelector: {}
+tolerations: []
+# E.g. kubernetes   ---  https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#taints-and-tolerations-beta-feature
+# - key: "key1"
+#   operator: "Equal"
+#   value: "value1"
+#   effect: "NoSchedule"
+# - key: "key1"
+#   operator: "Equal"
+#   value: "value1"
+#   effect: "NoExecute"
+
+podAnnotations: {}
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  # limits:
+  #   cpu: 500m
+  #   memory: 512Mi
+
+service:
+  annotations: {}

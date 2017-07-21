@@ -41,8 +41,9 @@ persistentVolume:
   size: 10Gi
   annotations: {}
 
-# Annotations to be added to the service
-serviceAnnotations: {}
+service:
+  # Annotations to be added to the service
+  annotations: {}
 
 rockmongo:
   enabled: false
@@ -54,6 +55,11 @@ rockmongo:
   hideSystemCollections: false
   service:
     loadBalancer: false
+    ingress:
+      enabled: false
+      annotations: {}
+      hosts: []
+      tls: []
   resources:
     requests:
       cpu: 50m
@@ -75,6 +81,11 @@ mongoexpress:
     pullPolicy: IfNotPresent
   service:
     loadBalancer: false
+    ingress:
+      enabled: false
+      annotations: {}
+      hosts: []
+      tls: []
   resources:
     requests:
       cpu: 50m

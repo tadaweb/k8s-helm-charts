@@ -1,0 +1,10 @@
+name: prometheus
+version: 0.1.0
+description: Prometheus is a monitoring system and time series database.
+home: https://prometheus.io/
+icon: https://cdn.worldvectorlogo.com/logos/prometheus.svg
+sources:
+  - https://github.com/prometheus/prometheus
+maintainers:
+  - name: Giuseppe Pellegrino
+    email: g.pellegrino@tadaweb.com

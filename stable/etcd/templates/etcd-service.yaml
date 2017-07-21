@@ -3,6 +3,12 @@ kind: Service
 metadata:
   annotations:
     service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+    {{- if .Values.service.annotations }}
+{{ toYaml .Values.service.annotations | indent 4 }}
+    {{- end }}
+    prometheus.io/scrape: "true"
+    prometheus.io/port: {{ .Values.ports.client }}
   name: "{{ template "fullname" . }}"
   labels:
     heritage: {{ .Release.Service | quote }}
@@ -10,10 +16,6 @@ metadata:
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     application: {{ template "fullname" . }}
     component: {{ template "name" . }}
-    {{- if .Values.metrics.enabled }}
-    metrics_port: {{ .Value.metrics.port | quote }}
-    metrics_exporter: etcd
-    {{- end }}
 spec:
   clusterIP: None
   ports:

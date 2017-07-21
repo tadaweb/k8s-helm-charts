@@ -1,0 +1,14 @@
+port: 9100
+
+image:
+  name: quay.io/prometheus/node-exporter
+  tag: v0.14.0
+  pullPolicy: Always
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 12Mi
+  limits:
+    cpu: 50m
+    memory: 12Mi

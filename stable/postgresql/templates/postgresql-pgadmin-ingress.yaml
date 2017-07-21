@@ -1,0 +1,30 @@
+{{- if .Values.pgadmin.service.ingress.enabled }}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ template "fullname" . }}-pgadmin
+  {{- if .Values.pgadmin.service.ingress.annotations }}
+  annotations:
+{{ toYaml .Values.pgadmin.service.ingress.annotations | indent 4 }}
+  {{- end }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    application: {{ template "fullname" . }}
+    component: pgadmin
+spec:
+  rules:
+  {{- range .Values.pgadmin.service.ingress.hosts }}
+    - host: {{ . }}
+      http:
+        paths:
+          - backend:
+              serviceName: {{ template "fullname" . }}-pgadmin
+              servicePort: {{ .Values.port }}
+  {{- end }}
+  {{- if .Values.pgadmin.service.ingress.tls }}
+  tls:
+{{ toYaml .Values.pgadmin.service.ingress.tls | indent 4 }}
+  {{- end }}
+{{- end }}

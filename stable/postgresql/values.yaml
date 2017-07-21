@@ -17,6 +17,10 @@ resources:
 
 service:
   loadBalancer: false
+  annotations: {}
+
+rbac:
+  enabled: false
 
 persistentVolume:
   enabled: true
@@ -25,6 +29,22 @@ persistentVolume:
   accessModes:
     - ReadWriteOnce
   annotations: {}
+
+terminationGracePeriodSeconds: 10
+
+nodeSelector: {}
+  #key: value
+tolerations: []
+# E.g. kubernetes   ---  https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#taints-and-tolerations-beta-feature
+# - key: "key1"
+#   operator: "Equal"
+#   value: "value1"
+#   effect: "NoSchedule"
+# - key: "key1"
+#   operator: "Equal"
+#   value: "value1"
+#   effect: "NoExecute"
+
 
 # Credentials used by Patroni
 # * more information: https://github.com/zalando/patroni/blob/master/docs/SETTINGS.rst#postgresql
@@ -47,6 +67,11 @@ pgadmin:
   enabled: false
   service:
     loadBalancer: false
+    ingress:
+      enabled: false
+      annotations: {}
+      hosts: []
+      tls: []
 
   credentials:
     user: pgadmin4@pgadmin.org
@@ -72,6 +97,11 @@ phppgadmin:
   masterOnly: true
   service:
     loadBalancer: false
+    ingress:
+      enabled: false
+      annotations: {}
+      hosts: []
+      tls: []
   port: 8060
   image:
     name: tadaweb/phppgadmin

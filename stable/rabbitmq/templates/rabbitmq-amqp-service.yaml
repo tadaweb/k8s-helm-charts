@@ -4,6 +4,9 @@ metadata:
   name: {{ template "fullname" . }}-amqp
   annotations:
     service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+    {{- if .Values.service.annotations }}
+{{ toYaml .Values.service.annotations | indent 4 }}
+    {{- end }}
   labels:
     application: {{ template "fullname" . }}
     component: {{ template "name" . }}

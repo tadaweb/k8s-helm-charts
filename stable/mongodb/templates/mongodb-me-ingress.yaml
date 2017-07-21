@@ -1,0 +1,30 @@
+{{- if .Values.mongoexpress.service.ingress.enabled }}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ template "fullname" . }}-mongoexpress
+  {{- if .Values.mongoexpress.service.ingress.annotations }}
+  annotations:
+{{ toYaml .Values.mongoexpress.service.ingress.annotations | indent 4 }}
+  {{- end }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    application: {{ template "fullname" . }}
+    component: mongoexpress
+spec:
+  rules:
+  {{- range .Values.mongoexpress.service.ingress.hosts }}
+    - host: {{ . }}
+      http:
+        paths:
+          - backend:
+              serviceName: {{ template "fullname" . }}-mongoexpress
+              servicePort: {{ .Values.port }}
+  {{- end }}
+  {{- if .Values.mongoexpress.service.ingress.tls }}
+  tls:
+{{ toYaml .Values.mongoexpress.service.ingress.tls | indent 4 }}
+  {{- end }}
+{{- end }}
