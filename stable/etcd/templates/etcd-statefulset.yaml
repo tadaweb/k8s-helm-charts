@@ -120,7 +120,7 @@ spec:
           {{ $key }}: {{ $value }}
         {{- end }}
       spec:
-        storageClassName: "{{ .Values.persistentVolume.className }}"
+        storageClassName: "{{ .Values.persistentVolume.storageClass }}"
         accessModes:
         {{- range $key, $value := .Values.persistentVolume.accessModes }}
           - {{ . | quote }}

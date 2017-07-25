@@ -12,7 +12,7 @@ spec:
   {{- if .Values.service.loadBalancer }}
   type: LoadBalancer
   {{- else }}
-  type: ClusterIp
+  type: ClusterIP
   {{- end }}
   ports:
   - port: {{ .Values.ports.client }}

@@ -16,7 +16,7 @@ metadata:
     {{- end }}
     {{- if .Values.metrics.enabled }}
     prometheus.io/scrape: "true"
-    prometheus.io/port: {{ .Values.metrics.port }}
+    prometheus.io/port: {{ .Values.metrics.port | quote }}
     {{- end }}
 spec:
   type: ClusterIP
